@@ -13,7 +13,7 @@ public function up(): void
 {
     Schema::table('users', function (Blueprint $table) {
         $table->string('street')->nullable();
-        $table->string('barangay')->nullable();
+        //$table->string('barangay')->nullable();
         $table->string('city')->nullable();
         $table->string('province')->nullable();
         $table->string('zip')->nullable();
