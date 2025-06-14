@@ -1,7 +1,6 @@
-# Use official PHP image with FPM
 FROM php:8.2-fpm
 
-# Install system dependencies
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     git curl zip unzip \
     libpng-dev libjpeg-dev libfreetype6-dev \
@@ -15,25 +14,25 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
-# Copy all application files
+# Copy app files
 COPY . .
 
-# Install PHP dependencies
+# Install dependencies
 RUN composer install --optimize-autoloader --no-dev
 
-# Clear and cache configuration
-RUN php artisan config:clear && php artisan config:cache
-
-# Copy .env and generate app key
+# Setup environment
 RUN cp .env.example .env && \
-    php artisan key:generate || (echo "Key generate failed" && exit 1)
+    php artisan config:clear && \
+    php artisan key:generate && \
+    php artisan config:cache
 
-# Run database migrations (optional: you can remove --force for safety)
-RUN php artisan migrate --force || (echo "Migration failed!" && exit 1)
+# Force migrate and clear caches (use with caution on production)
+RUN php artisan migrate:fresh --force && \
+    php artisan view:clear && \
+    php artisan config:clear && \
+    php artisan cache:clear && \
+    php artisan storage:link || true
 
-# Create storage symlink
-RUN php artisan storage:link || true
-
-# Expose port and start Laravel development server
+# Expose port and start app
 EXPOSE 10000
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=10000"]
