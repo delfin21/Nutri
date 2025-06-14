@@ -1,6 +1,7 @@
+# Use official PHP image with FPM
 FROM php:8.2-fpm
 
-# Install dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git curl zip unzip \
     libpng-dev libjpeg-dev libfreetype6-dev \
@@ -20,15 +21,19 @@ COPY . .
 # Install PHP dependencies
 RUN composer install --optimize-autoloader --no-dev
 
-# Copy .env and generate key
+# Clear and cache configuration
+RUN php artisan config:clear && php artisan config:cache
+
+# Copy .env and generate app key
 RUN cp .env.example .env && \
-    php artisan config:clear && \
     php artisan key:generate || (echo "Key generate failed" && exit 1)
 
-# Run migrations and link storage safely
-RUN php artisan migrate --force || (echo "Migration failed!" && exit 1) && \
-    php artisan storage:link || true
+# Run database migrations (optional: you can remove --force for safety)
+RUN php artisan migrate --force || (echo "Migration failed!" && exit 1)
 
-# Expose Laravel dev server
+# Create storage symlink
+RUN php artisan storage:link || true
+
+# Expose port and start Laravel development server
 EXPOSE 10000
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=10000"]
