@@ -11,24 +11,24 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working dir
+# Set working directory
 WORKDIR /var/www
 
-# Copy app files
+# Copy all application files
 COPY . .
 
-# Install PHP packages
+# Install PHP dependencies
 RUN composer install --optimize-autoloader --no-dev
 
-# Create default .env
-RUN cp .env.example .env
+# Copy .env and generate key
+RUN cp .env.example .env && \
+    php artisan config:clear && \
+    php artisan key:generate || (echo "Key generate failed" && exit 1)
 
-# Generate Laravel key
-RUN php artisan key:generate
+# Run migrations and link storage safely
+RUN php artisan migrate --force || (echo "Migration failed!" && exit 1) && \
+    php artisan storage:link || true
 
-# Run migrations and storage link
-RUN php artisan migrate --force && php artisan storage:link
-
-# Expose port and serve
+# Expose Laravel dev server
 EXPOSE 10000
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=10000"]
