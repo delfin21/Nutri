@@ -15,7 +15,7 @@ public function up(): void
         $table->string('street')->nullable();
         //$table->string('barangay')->nullable();
         //$table->string('city')->nullable();
-        $table->string('province')->nullable();
+        //$table->string('province')->nullable();
         $table->string('zip')->nullable();
     });
 }
