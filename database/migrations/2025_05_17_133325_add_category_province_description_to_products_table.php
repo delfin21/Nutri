@@ -9,15 +9,15 @@ return new class extends Migration {
     {
         Schema::table('products', function (Blueprint $table) {
             if (!Schema::hasColumn('products', 'category')) {
-                $table->string('category')->nullable()->after('location');
+                $table->string('category')->nullable();//->after('location');
             }
 
             if (!Schema::hasColumn('products', 'province')) {
-                $table->string('province')->nullable()->after('category');
+                $table->string('province')->nullable();//->after('category');
             }
 
             if (!Schema::hasColumn('products', 'description')) {
-                $table->text('description')->nullable()->after('province');
+                $table->text('description')->nullable();//->after('province');
             }
         });
     }
