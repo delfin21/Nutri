@@ -26,6 +26,8 @@ use App\Http\Controllers\Farmer\FarmerDashboardController;
 use App\Http\Controllers\Farmer\FarmerProfileController;
 use App\Http\Controllers\Farmer\FarmerSettingsController;
 use App\Http\Controllers\Farmer\FarmerNotificationController;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Response;
 
 // 🌐 Public Pages
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -178,9 +180,9 @@ Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 Route::get('/run-setup', function () {
-    \Artisan::call('migrate', ['--force' => true]);
-    \Artisan::call('storage:link');
+    Artisan::call('migrate', ['--force' => true]);
+    Artisan::call('storage:link');
 
-    return response("✅ Laravel setup complete.", 200)
+    return Response::make("✅ Laravel setup complete.", 200)
         ->header('Content-Type', 'text/plain');
 });
