@@ -33,4 +33,24 @@ class UserController extends Controller
 
         return response()->json($users);
     }
+    public function profile(Request $request)
+{
+    $user = $request->user();
+
+    return response()->json([
+        'name' => $user->name,
+        'email' => $user->email,
+        'phone' => $user->phone,
+        'business_name' => $user->business_name,
+        'business_type' => $user->business_type,
+        'payout_method' => $user->payout_method,
+        'payout_details' => $user->payout_details,
+        'street' => $user->street,
+        'barangay' => $user->barangay,
+        'city' => $user->city,
+        'province' => $user->province,
+        'zip' => $user->zip,
+        'created_at' => $user->created_at->diffForHumans(),
+    ]);
+}
 }

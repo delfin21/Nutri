@@ -12,15 +12,38 @@ class ProductController extends Controller
     protected $validCategories = ['Fruits', 'Vegetable', 'Grains', 'Spices', 'Beverages'];
 
     /**
-     * Get all products (basic listing, for admin or debug)
+     * Get all products (for mobile/web)
      */
     public function index()
     {
-        $products = Product::all();
+        $imageBaseUrl = env('APP_MOBILE_IMAGE_URL', 'http://127.0.0.1:8000');
 
-        return response()->json([
-            'products' => $products,
-        ]);
+        $products = Product::with('farmer')->get()->map(function ($product) use ($imageBaseUrl) {
+            $imagePath = $product->image;
+
+            if ($imagePath && str_starts_with($imagePath, 'http')) {
+                $imagePath = preg_replace('/^https?:\/\/(127\.0\.0\.1|localhost|192\.168\.\d+\.\d+)/', $imageBaseUrl, $imagePath);
+            } else if ($imagePath) {
+                $imagePath = $imageBaseUrl . '/storage/' . $imagePath;
+            } else {
+                $imagePath = $imageBaseUrl . '/img/default-product.jpg';
+            }
+
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->price,
+                'stock' => $product->stock,
+                'rating' => $product->rating ?? 0,
+                'category' => $product->category,
+                'image' => $imagePath,
+                'farmer_name' => optional($product->farmer)->business_name ?? 'Unknown',
+                'created_at' => $product->created_at,
+                'updated_at' => $product->updated_at,
+            ];
+        });
+
+        return response()->json(['products' => $products]);
     }
 
     /**

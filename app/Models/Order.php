@@ -26,6 +26,7 @@ protected $fillable = [
     'buyer_city',
     'buyer_region',
     'buyer_postal_code',
+    'conversation_id',
 ];
 
 

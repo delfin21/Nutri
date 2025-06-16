@@ -5,74 +5,74 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
-use App\Models\Cart;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use Carbon\Carbon;
+use App\Models\Conversation;
 
-class BuyerCheckoutController extends Controller
+class BuyerPurchaseController extends Controller
 {
-    public function checkout(Request $request)
-{
-    $user = $request->user();
+    public function index(Request $request)
+    {
+        $user = $request->user();
 
-    $validated = $request->validate([
-        'buyer_name' => 'required|string',
-        'buyer_phone' => 'required|string',
-        'buyer_address' => 'required|string',
-        'buyer_region' => 'required|string',
-        'buyer_city' => 'required|string',
-        'buyer_postal_code' => 'required|string',
-        'items' => 'required|array',
-        'items.*.product_id' => 'required|exists:products,id',
-        'items.*.quantity' => 'required|numeric|min:1',
-        'payment_method' => 'required|string',
-    ]);
+        $orders = Order::with(['product.user'])
+            ->where('buyer_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-    DB::beginTransaction();
-
-    try {
-        $totalAmount = 0;
-
-        foreach ($validated['items'] as $item) {
-            $product = \App\Models\Product::findOrFail($item['product_id']);
-            $total = $product->price * $item['quantity'];
-            $totalAmount += $total;
-
-            $order = Order::create([
-                'order_code' => 'ORD-' . strtoupper(Str::random(10)),
-                'buyer_id' => $user->id,
-                'farmer_id' => $product->farmer_id, // ✅ Make sure this is passed
-                'product_id' => $product->id,
-                'quantity' => $item['quantity'],
-                'price' => $product->price,
-                'total_price' => $total,
-                'buyer_name' => $validated['buyer_name'],
-                'buyer_phone' => $validated['buyer_phone'],
-                'buyer_address' => $validated['buyer_address'],
-                'buyer_region' => $validated['buyer_region'],
-                'buyer_city' => $validated['buyer_city'],
-                'buyer_postal_code' => $validated['buyer_postal_code'],
-                'payment_method' => $validated['payment_method'],
-                'status' => 'pending',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-
-        DB::commit();
+        $formattedOrders = $orders->map(function ($order) {
+            return [
+                'id' => $order->id,
+                'farmer' => $order->product->user->name ?? 'Unknown',
+                'farmer_id' => $order->product->user->id ?? null, // ✅ needed for chat
+                'conversation_id' => $order->conversation_id ?? null, // ✅ needed for chat
+                'product_name' => $order->product->name ?? 'Unnamed',
+                'weight' => $order->quantity . ' kg',
+                'price_per_kg' => (float) $order->price,
+                'total_price' => (float) $order->price * $order->quantity,
+                'status' => $order->status,
+                'image_url' => $order->product->image
+                    ? url('storage/' . $order->product->image)
+                    : null,
+            ];
+        });
 
         return response()->json([
-            'message' => 'Order placed successfully',
-            'total_amount' => $totalAmount
-        ], 200);
+            'orders' => $formattedOrders,
+        ]);
+    }
 
-    } catch (\Exception $e) {
-        DB::rollBack();
-        \Log::error('Checkout failed: ' . $e->getMessage());
-        return response()->json(['error' => 'Checkout failed'], 500);
+    public function confirmDelivery($id, Request $request)
+    {
+        $order = Order::where('id', $id)
+            ->where('buyer_id', $request->user()->id)
+            ->firstOrFail();
+
+        if ($order->status !== 'shipped') {
+            return response()->json([
+                'message' => 'Cannot confirm delivery. Status must be shipped.'
+            ], 400);
+        }
+
+        $order->status = 'completed';
+        $order->save();
+
+        return response()->json(['message' => 'Order marked as completed.']);
+    }
+
+    public function cancel($id, Request $request)
+    {
+        $order = Order::where('id', $id)
+            ->where('buyer_id', $request->user()->id)
+            ->firstOrFail();
+
+        if (!in_array($order->status, ['pending', 'to_ship'])) {
+            return response()->json([
+                'message' => 'Cannot cancel after order is shipped.'
+            ], 400);
+        }
+
+        $order->status = 'canceled';
+        $order->save();
+
+        return response()->json(['message' => 'Order canceled.']);
     }
 }
-}
-

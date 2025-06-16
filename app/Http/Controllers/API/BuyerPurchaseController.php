@@ -12,7 +12,7 @@ class BuyerPurchaseController extends Controller
     {
         $user = $request->user();
 
-        $orders = Order::with(['product.user'])
+        $orders = Order::with(['product.user']) // product.user = farmer
             ->where('buyer_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -26,7 +26,12 @@ class BuyerPurchaseController extends Controller
                 'price_per_kg' => (float) $order->price,
                 'total_price' => (float) $order->price * $order->quantity,
                 'status' => $order->status,
-                'image_url' => $order->product->image ? url('storage/' . $order->product->image) : null,
+                'image_url' => $order->product->image
+                    ? url('storage/' . $order->product->image)
+                    : null,
+                // ✅ Add these:
+                'farmer_id' => $order->product->user_id ?? null,
+                'conversation_id' => $order->conversation_id ?? null,
             ];
         });
 
@@ -35,7 +40,7 @@ class BuyerPurchaseController extends Controller
         ]);
     }
 
-    // Confirm Delivery (PUT /api/buyer/orders/{id}/confirm)
+    // ✅ Confirm Delivery (PUT /api/buyer/orders/{id}/confirm)
     public function confirmDelivery($id, Request $request)
     {
         $order = Order::where('id', $id)
@@ -43,7 +48,9 @@ class BuyerPurchaseController extends Controller
             ->firstOrFail();
 
         if ($order->status !== 'shipped') {
-            return response()->json(['message' => 'Cannot confirm delivery. Status must be shipped.'], 400);
+            return response()->json([
+                'message' => 'Cannot confirm delivery. Status must be shipped.'
+            ], 400);
         }
 
         $order->status = 'completed';
@@ -52,7 +59,7 @@ class BuyerPurchaseController extends Controller
         return response()->json(['message' => 'Order marked as completed.']);
     }
 
-    // Cancel Order (PUT /api/buyer/orders/{id}/cancel)
+    // ✅ Cancel Order (PUT /api/buyer/orders/{id}/cancel)
     public function cancel($id, Request $request)
     {
         $order = Order::where('id', $id)
@@ -60,7 +67,9 @@ class BuyerPurchaseController extends Controller
             ->firstOrFail();
 
         if (!in_array($order->status, ['pending', 'to_ship'])) {
-            return response()->json(['message' => 'Cannot cancel after order is shipped.'], 400);
+            return response()->json([
+                'message' => 'Cannot cancel after order is shipped.'
+            ], 400);
         }
 
         $order->status = 'canceled';

@@ -12,7 +12,12 @@ public function index(Request $request)
 {
     $user = $request->user();
 
-    $products = Product::where('farmer_id', $user->id)->get();
+    $products = Product::where('farmer_id', $user->id)
+        ->when($request->q, function ($query) use ($request) {
+            $query->where('name', 'like', '%' . $request->q . '%');
+        })
+        ->orderBy('created_at', 'desc') // Optional: makes ordering consistent
+        ->get();
 
     return response()->json($products);
 }
