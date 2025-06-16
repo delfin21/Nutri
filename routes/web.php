@@ -180,5 +180,7 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 Route::get('/run-setup', function () {
     \Artisan::call('migrate', ['--force' => true]);
     \Artisan::call('storage:link');
-    return '✅ Laravel setup complete.';
+
+    return response("✅ Laravel setup complete.", 200)
+        ->header('Content-Type', 'text/plain');
 });
