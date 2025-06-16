@@ -177,3 +177,8 @@ require __DIR__.'/auth.php';
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::get('/run-setup', function () {
+    \Artisan::call('migrate', ['--force' => true]);
+    \Artisan::call('storage:link');
+    return '✅ Laravel setup complete.';
+});
