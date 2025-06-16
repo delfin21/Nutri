@@ -1,6 +1,6 @@
 FROM php:8.2-fpm
 
-# Install dependencies
+# 1. Install system dependencies
 RUN apt-get update && apt-get install -y \
     git curl zip unzip \
     libpng-dev libjpeg-dev libfreetype6-dev \
@@ -8,31 +8,29 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# Install Composer
+# 2. Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
+# 3. Set working directory
 WORKDIR /var/www
 
-# Copy app files
+# 4. Copy application files
 COPY . .
 
-# Install dependencies
-RUN composer install --optimize-autoloader --no-dev
+# 5. Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
 
-# Setup environment
+# 6. Fix permissions for Laravel
+RUN chmod -R 775 storage bootstrap/cache
+
+# 7. Prepare Laravel for production
 RUN cp .env.example .env && \
-    php artisan config:clear && \
     php artisan key:generate && \
-    php artisan config:cache
-
-# Force migrate and clear caches (use with caution on production)
-RUN php artisan migrate:fresh --force && \
-    php artisan view:clear && \
-    php artisan config:clear && \
-    php artisan cache:clear && \
+    php artisan config:cache && \
+    php artisan route:cache && \
+    php artisan view:cache && \
     php artisan storage:link || true
 
-# Expose port and start app
+# 8. Expose port and run Laravel's built-in server
 EXPOSE 10000
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=10000"]
