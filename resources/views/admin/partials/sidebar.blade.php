@@ -6,11 +6,6 @@
         <img src="{{ asset('img/nutriteam-logo.png') }}" alt="Nutri Team Logo" class="img-fluid" style="max-height: 100px;">
     </div>
 
-    {{-- Optional Sidebar Search --}}
-    {{-- <form method="GET" action="#" class="mb-3 d-none d-md-block">
-        <input type="text" name="sidebar_search" class="form-control form-control-sm" placeholder="Search...">
-    </form> --}}
-
     {{-- Nav Links --}}
     <ul class="nav nav-pills flex-column mb-auto">
         <li class="nav-item">
@@ -24,8 +19,18 @@
             </a>
         </li>
         <li>
+            <a href="{{ route('admin.verifications.index') }}" class="nav-link {{ request()->routeIs('admin.verifications.*') ? 'active' : 'text-dark' }}">
+                <i class="bi bi-patch-check me-2"></i> Verifications
+            </a>
+        </li>
+        <li>
             <a href="{{ route('admin.orders.index') }}" class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : 'text-dark' }}">
                 <i class="bi bi-bag-check me-2"></i> Orders
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('admin.returns.index') }}" class="nav-link {{ request()->routeIs('admin.returns.*') ? 'active' : 'text-dark' }}">
+                <i class="bi bi-arrow-counterclockwise me-2"></i> Return Requests
             </a>
         </li>
         <li>

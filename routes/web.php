@@ -26,8 +26,9 @@ use App\Http\Controllers\Farmer\FarmerDashboardController;
 use App\Http\Controllers\Farmer\FarmerProfileController;
 use App\Http\Controllers\Farmer\FarmerSettingsController;
 use App\Http\Controllers\Farmer\FarmerNotificationController;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Response;
+use App\Http\Controllers\Farmer\FarmerVerificationController;
+use App\Http\Controllers\Buyer\ReturnRequestController as BuyerReturnRequestController;
+use App\Http\Controllers\Farmer\FarmerReturnController;
 
 // 🌐 Public Pages
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -71,7 +72,7 @@ Route::prefix('farmer')->name('farmer.')->middleware(['auth', 'verified'])->grou
 
     Route::get('/settings', [FarmerSettingsController::class, 'index'])->name('settings');
     Route::patch('/settings/password', [FarmerSettingsController::class, 'updatePassword'])->name('settings.updatePassword');
-    Route::post('/settings/documents', [FarmerSettingsController::class, 'uploadDocuments'])->name('settings.uploadDocuments');
+    Route::post('/settings/documents', [FarmerVerificationController::class, 'store'])->name('settings.uploadDocuments');
 
     Route::get('/products/templates/{category}', [FarmerProductController::class, 'getTemplates'])->name('products.templates');
     Route::resource('products', FarmerProductController::class);
@@ -82,8 +83,12 @@ Route::prefix('farmer')->name('farmer.')->middleware(['auth', 'verified'])->grou
     Route::get('/orders/{order}', [TransactionController::class, 'show'])->name('orders.show');
 
     Route::get('/notifications', [FarmerNotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/mark-all', [FarmerNotificationController::class, 'markAll'])
-    ->name('notifications.markAll');
+    Route::post('/notifications/mark-all', [FarmerNotificationController::class, 'markAll'])->name('notifications.markAll');
+
+    // 🧾 Return Requests (Rebuttal)
+    Route::get('/returns', [FarmerReturnController::class, 'index'])->name('returns.index');
+    Route::get('/returns/{id}', [FarmerReturnController::class, 'show'])->name('returns.show');
+    Route::post('/returns/{id}/respond', [FarmerReturnController::class, 'respond'])->name('returns.respond');
 
     // 💬 Messaging
     Route::get('/messages/inbox', [MessageController::class, 'inbox'])->name('messages.inbox');
@@ -108,7 +113,6 @@ Route::prefix('buyer')->name('buyer.')->middleware(['auth', 'verified'])->group(
         Route::get('/', [CartController::class, 'index'])->name('index');
         Route::post('/checkout', [CartController::class, 'checkoutSelected'])->name('checkout');
         Route::post('/update-quantity', [CartController::class, 'updateQuantity'])->name('updateQuantity');
-        Route::post('/add', [CartController::class, 'add'])->name('add');
         Route::delete('/{id}', [CartController::class, 'removeFromCart'])->name('remove');
     });
 
@@ -130,8 +134,12 @@ Route::prefix('buyer')->name('buyer.')->middleware(['auth', 'verified'])->group(
     Route::get('/orders/history', [OrderController::class, 'history'])->name('orders.history');
     Route::patch('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     Route::patch('/orders/{order}/confirm', [OrderController::class, 'confirm'])->name('orders.confirm');
-    Route::patch('/orders/{order}/return', [OrderController::class, 'requestReturn'])->name('orders.requestReturn');
     Route::post('/orders/{order}/buy-again', [OrderController::class, 'buyAgain'])->name('orders.buyAgain');
+
+    // 📥 Return / Refund
+    Route::get('/orders/{order}/return-request', [BuyerReturnRequestController::class, 'create'])->name('returns.create');
+    Route::post('/orders/{order}/return-request', [BuyerReturnRequestController::class, 'store'])->name('returns.store');
+    Route::get('/returns/{id}', [BuyerReturnRequestController::class, 'show'])->name('returns.show');
 
     // ⭐ Rating System
     Route::get('/orders/{order}/rate', [OrderController::class, 'rate'])->name('orders.rate.create');
@@ -175,14 +183,3 @@ Route::post('/webhooks/paymongo', [App\Http\Controllers\WebhookController::class
 
 // 🛡 Laravel Auth Routes
 require __DIR__.'/auth.php';
-
-Auth::routes();
-
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-Route::get('/run-setup', function () {
-    Artisan::call('migrate', ['--force' => true]);
-    Artisan::call('storage:link');
-
-    return Response::make("✅ Laravel setup complete.", 200)
-        ->header('Content-Type', 'text/plain');
-});

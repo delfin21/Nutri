@@ -89,6 +89,9 @@
                     <i class="bi bi-cart me-2"></i> Orders
                 </a>
 
+                <a class="nav-link {{ request()->is('farmer/returns*') ? 'active' : '' }}" href="{{ route('farmer.returns.index') }}">
+                    <i class="bi bi-arrow-counterclockwise me-2"></i> Return Requests
+                </a>
 
                 <a class="nav-link {{ request()->is('farmer/messages*') ? 'active' : '' }}" href="{{ route('farmer.messages.inbox') }}">
                     <i class="bi bi-envelope-fill"></i> Messages

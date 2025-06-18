@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\API\{
     AuthController,
@@ -26,9 +26,16 @@ use App\Models\User;
 use App\Models\DeviceToken;
 use App\Services\FirebaseNotificationService;
 use App\Http\Controllers\API\ProductTemplateController;
+use App\Http\Controllers\PaymentController; 
+
 // 🔐 Public Routes
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [RegisterController::class, 'register']);
+
+// PayMongo payment endpoints
+Route::post('/paymongo/payment-intent', [PaymentController::class, 'createPaymentIntent']);
+Route::post('/paymongo/payment-method', [PaymentController::class, 'createPaymentMethod']);
+Route::post('/paymongo/attach', [PaymentController::class, 'attachPaymentMethod']);
 
 // 🔐 Authenticated Routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -67,12 +74,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/cart/remove/{id}', [CartController::class, 'removeCartItem']);
 
     // 🧾 Buyer Orders
-    // 🧾 Buyer Orders
-Route::post('/orders', [BuyerCheckoutController::class, 'checkout']);
-Route::get('/buyer/purchases', [BuyerPurchaseController::class, 'index']);
-Route::put('/buyer/orders/{id}/confirm', [BuyerPurchaseController::class, 'confirmDelivery']);
-Route::put('/buyer/orders/{id}/cancel', [BuyerPurchaseController::class, 'cancel']);
-
+    Route::post('/orders', [BuyerCheckoutController::class, 'checkout']);
+    Route::get('/buyer/purchases', [BuyerPurchaseController::class, 'index']);
+    Route::put('/buyer/orders/{id}/confirm', [BuyerPurchaseController::class, 'confirmDelivery']);
+    Route::put('/buyer/orders/{id}/cancel', [BuyerPurchaseController::class, 'cancel']);
 
     // 💬 Messaging
     Route::get('/messages/conversation/{otherUserId}', [MessageController::class, 'getConversation']);
@@ -86,9 +91,6 @@ Route::put('/buyer/orders/{id}/cancel', [BuyerPurchaseController::class, 'cancel
     // 🔔 Notifications
     Route::get('/buyer/notifications', [BuyerNotificationController::class, 'index']);
     Route::get('/farmer/notifications', [FarmerNotificationController::class, 'farmerIndex']);
-Route::middleware('auth:sanctum')->get('/buyer/notifications', [BuyerNotificationController::class, 'index']);
-
-
 
     // 📱 Device Token Save
     Route::post('/device-tokens', function (Request $request) {
@@ -103,6 +105,8 @@ Route::middleware('auth:sanctum')->get('/buyer/notifications', [BuyerNotificatio
         return response()->json(['status' => 'token_saved']);
     });
 });
+
+// Additional buyer-prefixed routes for convenience
 Route::middleware('auth:sanctum')->prefix('buyer')->group(function () {
     Route::get('/orders', [BuyerPurchaseController::class, 'index']);
     Route::put('/orders/{id}/cancel', [BuyerPurchaseController::class, 'cancel']);
@@ -115,7 +119,7 @@ Route::get('/products/{id}', [ProductController::class, 'show']);
 Route::get('/products/by-category/{id}', [ProductController::class, 'getByCategory']);
 Route::get('/categories-list', [ProductController::class, 'getValidCategories']);
 Route::get('/products/{product}/reviews', [ReviewController::class, 'index']);
-Route::get('/product-templates/{category}', [\App\Http\Controllers\API\ProductTemplateController::class, 'getByCategory']);
+Route::get('/product-templates/{category}', [ProductTemplateController::class, 'getByCategory']);
 
 // 🚀 Test FCM
 Route::post('/test-order-fcm', function () {

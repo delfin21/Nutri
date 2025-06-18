@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
+use App\Notifications\AdminVerifyEmail;
 
 class AdminRegisteredUserController extends Controller
 {
@@ -19,22 +20,26 @@ class AdminRegisteredUserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|confirmed|min:8',
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed', 'regex:/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).+$/'],
+        ], [
+            'password.regex' => 'Password must include uppercase, lowercase, number, and special character.',
         ]);
-    
+
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'role' => 'admin', // <-- Important! Set role as admin
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'password' => Hash::make($request->password),
+            'role'     => 'admin',
         ]);
-    
-        event(new Registered($user));
-    
-        Auth::login($user);
-    
-        return redirect()->route('admin.dashboard');
+
+        // Send custom admin verification notification
+        $user->notify(new AdminVerifyEmail());
+
+        Auth::guard('admin')->login($user);
+
+        return redirect()->route('admin.verification.notice'); // ✅ Redirect to the verify page
     }
+
 }

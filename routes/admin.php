@@ -21,6 +21,10 @@ use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AdminReviewController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\FarmerVerificationReviewController;
+use App\Http\Controllers\Admin\ReturnRequestController as AdminReturnRequestController;
+use App\Notifications\AdminVerifyEmail;
+
 
 // ========================================================================
 // 🔐 Public Routes (No Auth Required) — Login, Register, Forgot Password
@@ -47,7 +51,7 @@ Route::prefix('admin')->group(function () {
     })->middleware('auth:admin')->name('admin.verification.notice');
 
     // ✅ Admin Email Verification Handler
-    Route::get('/admin/verify-email/{id}/{hash}', function (Request $request, $id, $hash) {
+    Route::get('/verify-email/{id}/{hash}', function (Request $request, $id, $hash) {
         $admin = User::findOrFail($id);
 
         if ($admin->role !== 'admin') {
@@ -74,11 +78,11 @@ Route::prefix('admin')->group(function () {
 
     // 🔁 Resend Email Verification
     Route::post('/email/verification-notification', function (Request $request) {
-        $request->user('admin')->sendEmailVerificationNotification();
-        return back()->with('status', 'Verification link sent!');
+    $request->user('admin')->notify(new AdminVerifyEmail());
+    return back()->with('status', 'Verification link sent!');
     })->middleware(['auth:admin', 'throttle:6,1'])->name('admin.verification.send');
-});
 
+});
 
 // ========================================================================
 // 🔒 Protected Admin Routes (Requires Authentication)
@@ -91,6 +95,10 @@ Route::middleware(['auth:admin', 'verified'])->prefix('admin')->name('admin.')->
     // 📦 Products
     Route::resource('products', AdminProductController::class);
     Route::get('/products-export', [AdminProductController::class, 'export'])->name('products.export');
+
+    // ✅ Product Approval
+    Route::patch('/products/{id}/approve', [AdminProductController::class, 'approve'])->name('products.approve');
+    Route::patch('/products/{id}/reject', [AdminProductController::class, 'reject'])->name('products.reject');
 
     // 🛒 Orders
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
@@ -107,6 +115,11 @@ Route::middleware(['auth:admin', 'verified'])->prefix('admin')->name('admin.')->
     Route::post('/users/{user}/ban', [AdminUserController::class, 'ban'])->name('users.ban');
     Route::post('/users/{user}/unban', [AdminUserController::class, 'unban'])->name('users.unban');
     Route::get('/users-export', [AdminUserController::class, 'export'])->name('users.export');
+
+    // 📄 Farmer Verification
+    Route::get('/verifications', [FarmerVerificationReviewController::class, 'index'])->name('verifications.index');
+    Route::patch('/verifications/{id}/approve', [FarmerVerificationReviewController::class, 'approve'])->name('verifications.approve');
+    Route::patch('/verifications/{id}/reject', [FarmerVerificationReviewController::class, 'reject'])->name('verifications.reject');
 
     // 🌟 Reviews & Ratings
     Route::get('/reviews', [AdminReviewController::class, 'index'])->name('reviews.index');
@@ -137,4 +150,10 @@ Route::middleware(['auth:admin', 'verified'])->prefix('admin')->name('admin.')->
     });
 
     Route::get('/notifications/json', [NotificationController::class, 'fetch'])->name('notifications.fetch');
+
+    // 🧾 Return Requests
+    Route::get('/returns', [AdminReturnRequestController::class, 'index'])->name('returns.index');
+    Route::get('/returns/{id}', [AdminReturnRequestController::class, 'show'])->name('returns.show');
+    Route::post('/returns/{id}/approve', [AdminReturnRequestController::class, 'approve'])->name('returns.approve');
+    Route::post('/returns/{id}/reject', [AdminReturnRequestController::class, 'reject'])->name('returns.reject');
 });

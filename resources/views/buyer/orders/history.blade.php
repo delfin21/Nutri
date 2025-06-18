@@ -84,7 +84,6 @@
                             @endif
                         </div>
 
-                        {{-- 💳 Payment Status --}}
                         <div class="mb-2">
                             @php
                                 $status = $order->payment_status;
@@ -101,53 +100,60 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <strong class="text-success">₱{{ number_format($order->total_price, 2) }}</strong>
                             <div class="d-flex gap-2 flex-wrap">
-
-                            {{-- Cancel: Allow if Pending or To Ship --}}
-                            @if (in_array(strtolower($order->status), ['pending', 'to ship']))
-                                <form method="POST" action="{{ route('buyer.orders.cancel', $order->id) }}">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm"
-                                            onclick="return confirm('Are you sure you want to cancel this order?')">
-                                        Cancel
-                                    </button>
-                                </form>
-                            @endif
-
-                            {{-- Confirm: If Shipped --}}
-                            @if (strtolower($order->status) === 'shipped')
-                                <form method="POST" action="{{ route('buyer.orders.confirm', $order->id) }}">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-outline-success btn-sm"
-                                            onclick="return confirm('Confirm delivery for this order?')">
-                                        Confirm Delivery
-                                    </button>
-                                </form>
-                            @endif
-
-                                {{-- Return/Refund: Allow only if Shipped (NOT Completed) --}}
-                                @if (strtolower($order->status) === 'shipped')
-                                    <form method="POST" action="{{ route('buyer.orders.requestReturn', $order->id) }}">
+                                {{-- Cancel --}}
+                                @if (in_array(strtolower($order->status), ['pending', 'to ship']))
+                                    <form method="POST" action="{{ route('buyer.orders.cancel', $order->id) }}">
                                         @csrf
                                         @method('PATCH')
                                         <button type="submit" class="btn btn-outline-danger btn-sm"
-                                                onclick="return confirm('Request return/refund for this order?')">
-                                            Return / Refund
+                                                onclick="return confirm('Are you sure you want to cancel this order?')">
+                                            Cancel
                                         </button>
                                     </form>
                                 @endif
 
-                                {{-- Rate: Show if Completed and no rating yet --}}
+                                {{-- Confirm Delivery --}}
+                                @if (strtolower($order->status) === 'shipped' && !$order->returnRequest)
+                                    <form method="POST" action="{{ route('buyer.orders.confirm', $order->id) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-outline-success btn-sm"
+                                                onclick="return confirm('Confirm delivery for this order?')">
+                                            Confirm Delivery
+                                        </button>
+                                    </form>
+                                @endif
+
+                                {{-- Return/Refund --}}
+                                @if (strtolower($order->status) === 'shipped' && !$order->returnRequest)
+                                    <a href="{{ route('buyer.returns.create', $order->id) }}" class="btn btn-outline-danger btn-sm"
+                                       onclick="return confirm('Are you sure you want to request a return/refund?')">
+                                        Return / Refund
+                                    </a>
+                                @elseif ($order->returnRequest && $order->returnRequest->status === 'pending')
+                                    <span class="badge bg-warning text-dark">Return Requested</span>
+                                @elseif ($order->returnRequest)
+                                    @if ($order->returnRequest->status === 'rejected')
+                                        <span class="badge bg-danger text-white">Return Rejected</span>
+                                        <a href="{{ route('buyer.returns.show', $order->returnRequest->id) }}" class="btn btn-outline-secondary btn-sm">
+                                            View Return Details
+                                        </a>
+                                    @elseif ($order->returnRequest->status === 'approved')
+                                        <span class="badge bg-success text-white">Return Approved</span>
+                                        <a href="{{ route('buyer.returns.show', $order->returnRequest->id) }}" class="btn btn-outline-secondary btn-sm">
+                                            View Return Details
+                                        </a>
+                                    @endif
+                                @endif
+
+                                {{-- Rate --}}
                                 @if (strtolower($order->status) === 'completed' && !$order->rating)
                                     <a href="{{ route('buyer.orders.rate.create', $order->id) }}" class="btn btn-outline-primary btn-sm">
                                         Rate Product
                                     </a>
                                 @endif
-
                             </div>
                         </div>
-
                     </div>
                 </div>
             @empty

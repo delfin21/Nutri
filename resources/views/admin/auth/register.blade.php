@@ -1,57 +1,76 @@
-@extends('layouts.admin')
+@extends('layouts.auth')
 
 @section('title', 'Admin Register')
 
+@section('body-class', 'login-page')
+
 @section('content')
-<div class="register-page">
-  <div class="register-box">
-    <div class="card card-outline card-primary">
-      <div class="card-header text-center">
-        <a href="#" class="h1"><b>Admin</b>Panel</a>
-      </div>
-      <div class="card-body">
-        <p class="login-box-msg">Register a new admin account</p>
+<div class="nutri-login-container">
+    <div class="nutri-login-box">
+        <!-- Sidebar / Branding -->
+        <div class="nutri-login-sidebar">
+            <img src="{{ asset('img/nutriteam-logo.png') }}" alt="NutriApp Logo">
+            <h3>Welcome to NutriHub</h3>
+            <p>Manage your agricultural marketplace with confidence.</p>
+        </div>
 
-        <form method="POST" action="{{ route('admin.register.store') }}">
-          @csrf
+        <!-- Registration Form -->
+        <div class="nutri-login-form">
+            <h4 class="mb-4">Register a new Admin account</h4>
 
-          <div class="input-group mb-3">
-            <input type="text" name="name" class="form-control" placeholder="Full name" required autofocus>
-            <div class="input-group-append">
-              <div class="input-group-text"><i class="fas fa-user"></i></div>
+            @if ($errors->any())
+                <div class="alert alert-danger"><strong>{{ $errors->first() }}</strong></div>
+            @endif
+
+            <form method="POST" action="{{ route('admin.register.store') }}">
+                @csrf
+
+                <div class="mb-3 nutri-form-group">
+                    <label for="name" class="form-label">Full name</label>
+                    <input type="text" name="name" id="name"
+                           value="{{ old('name') }}"
+                           class="form-control @error('name') is-invalid @enderror"
+                           placeholder="John Admin" required autofocus>
+                    @error('name')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="mb-3 nutri-form-group">
+                    <label for="email" class="form-label">Email address</label>
+                    <input type="email" name="email" id="email"
+                           value="{{ old('email') }}"
+                           class="form-control @error('email') is-invalid @enderror"
+                           placeholder="admin@example.com" required>
+                    @error('email')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="mb-3 nutri-form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" name="password" id="password"
+                           class="form-control @error('password') is-invalid @enderror"
+                           placeholder="********" required>
+                    @error('password')
+                        <div class="text-danger small mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="mb-3 nutri-form-group">
+                    <label for="password_confirmation" class="form-label">Confirm Password</label>
+                    <input type="password" name="password_confirmation"
+                           class="form-control"
+                           placeholder="Repeat password" required>
+                </div>
+
+                <button type="submit" class="btn btn-nutri w-100">Register</button>
+            </form>
+
+            <div class="text-center mt-3">
+                <a href="{{ route('admin.login') }}" class="text-muted">Already have an account? Login here</a>
             </div>
-          </div>
-
-          <div class="input-group mb-3">
-            <input type="email" name="email" class="form-control" placeholder="Email" required>
-            <div class="input-group-append">
-              <div class="input-group-text"><i class="fas fa-envelope"></i></div>
-            </div>
-          </div>
-
-          <div class="input-group mb-3">
-            <input type="password" name="password" class="form-control" placeholder="Password" required>
-            <div class="input-group-append">
-              <div class="input-group-text"><i class="fas fa-lock"></i></div>
-            </div>
-          </div>
-
-          <div class="input-group mb-3">
-            <input type="password" name="password_confirmation" class="form-control" placeholder="Confirm Password" required>
-            <div class="input-group-append">
-              <div class="input-group-text"><i class="fas fa-lock"></i></div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-12">
-              <button type="submit" class="btn btn-primary btn-block">Register</button>
-            </div>
-          </div>
-        </form>
-
-      </div>
+        </div>
     </div>
-  </div>
 </div>
 @endsection

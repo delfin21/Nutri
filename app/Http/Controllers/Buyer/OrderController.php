@@ -179,22 +179,35 @@ class OrderController extends Controller
 
     public function requestReturn(Request $request, $orderId)
     {
-        $order = Order::where('id', $orderId)->where('buyer_id', auth()->id())->firstOrFail();
+        $order = Order::where('id', $orderId)
+            ->where('buyer_id', auth()->id())
+            ->firstOrFail();
 
-        if (!in_array($order->status, ['shipped', 'completed'])) {
-            return back()->with('error', 'Return/Refund only available for shipped or completed orders.');
+        // Prevent duplicate return requests
+        if ($order->returnRequest) {
+            return back()->with('info', 'You already submitted a return/refund request.');
         }
 
+        if (!in_array(strtolower($order->status), ['shipped'])) {
+            return back()->with('error', 'Return/Refund only available for shipped orders.');
+        }
+
+        // ✅ Roll back stock if it was deducted
         $product = $order->product;
-        if ($product) {
+        if ($product && $order->stock_deducted) {
             $product->stock += $order->quantity;
             $product->save();
+
+            $order->stock_deducted = false;
+            $order->save();
         }
 
+        // ✅ Update order status
         $order->status = 'Return/Refund';
-        $order->stock_deducted = false;
         $order->save();
 
-        return back()->with('success', 'Return/Refund requested and stock rolled back.');
+        // ✅ Redirect to reason + image form
+        return redirect()->route('returns.create', $order->id);
     }
+
 }

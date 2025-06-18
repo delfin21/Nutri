@@ -10,7 +10,7 @@ class AdminOrderController extends Controller
 {
   public function index(Request $request)
   {
-      $orders = Order::with(['buyer', 'product.user']) // product.user = farmer
+      $orders = Order::with(['buyer', 'product.user', 'returnRequest']) // product.user = farmer
           ->when($request->search, function ($query, $search) {
               $query->where(function ($q) use ($search) {
                   // Search by product name

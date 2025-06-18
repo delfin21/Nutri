@@ -159,8 +159,9 @@ class AdminUserController extends Controller
 
     public function show(User $user)
     {
-        return view('admin.users.show', compact('user'));
+        return view('admin.users.partials.details', compact('user'));
     }
+
 
     public function create()
     {

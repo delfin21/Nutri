@@ -26,7 +26,7 @@ public function boot(): void
 {
     // ✅ Force HTTPS in production
     if (env('APP_ENV') !== 'local') {
-        \Illuminate\Support\Facades\URL::forceScheme('https');
+        \Illuminate\Support\Facades\URL::forceScheme('http');
     }
 
     // ✅ Use Bootstrap 5 for pagination

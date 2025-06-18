@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\VerifiesEmails;
-
+use Illuminate\Support\Facades\Log;
 class VerificationController extends Controller
 {
     /*
@@ -38,4 +38,22 @@ class VerificationController extends Controller
         $this->middleware('signed')->only('verify');
         $this->middleware('throttle:6,1')->only('verify', 'resend');
     }
+    public function resend(Request $request)
+{
+    if ($request->user()->hasVerifiedEmail()) {
+        return redirect()->intended($this->redirectPath());
+    }
+
+    $request->user()->sendEmailVerificationNotification();
+
+    // ✅ Write to laravel.log
+    Log::info('Verification email resent for user: ' . $request->user()->email, [
+        'user_id' => $request->user()->id,
+        'timestamp' => now()->toDateTimeString(),
+        'ip' => $request->ip(),
+    ]);
+
+    return back()->with('status', 'verification-link-sent');
+}
+
 }

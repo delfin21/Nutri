@@ -11,29 +11,27 @@ class Order extends Model
 {
     use HasFactory;
 
-protected $fillable = [
-    'order_code',
-    'buyer_id',
-    'product_id',
-    'farmer_id',
-    'quantity',
-    'price',
-    'total_price',
-    'status',
-    'payment_status',
-    'buyer_phone',
-    'buyer_address',
-    'buyer_city',
-    'buyer_region',
-    'buyer_postal_code',
-    'conversation_id',
-];
-
+    protected $fillable = [
+        'order_code',
+        'buyer_id',
+        'product_id',
+        'farmer_id',
+        'quantity',
+        'price',
+        'total_price',
+        'status',
+        'payment_status',
+        'buyer_phone',
+        'buyer_address',
+        'buyer_city',
+        'buyer_region',
+        'buyer_postal_code',
+        'conversation_id',
+    ];
 
     protected $attributes = [
         'status' => 'Pending',
     ];
-
 
     public function getPaymentStatusLabelAttribute()
     {
@@ -45,33 +43,21 @@ protected $fillable = [
         };
     }
 
-    /**
-     * The product associated with the order.
-     */
     public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
-    /**
-     * The buyer who placed the order.
-     */
     public function buyer()
     {
         return $this->belongsTo(User::class, 'buyer_id');
     }
 
-    /**
-     * The farmer who owns the product.
-     */
     public function farmer()
     {
         return $this->belongsTo(User::class, 'farmer_id');
     }
 
-    /**
-     * Check if the product has already been rated by the buyer for this order.
-     */
     public function alreadyRated()
     {
         return $this->product
@@ -82,9 +68,6 @@ protected $fillable = [
             : false;
     }
 
-    /**
-     * Get a readable label for the order summary (used in notifications).
-     */
     public function getSummaryForNotification()
     {
         return sprintf(
@@ -97,9 +80,6 @@ protected $fillable = [
         );
     }
 
-    /**
-     * The rating associated with this order.
-     */
     public function rating()
     {
         return $this->hasOne(\App\Models\Rating::class);
@@ -108,19 +88,20 @@ protected $fillable = [
     public static function generateStructuredOrderCode($farmer)
     {
         $prefix = 'ORD';
-
-        $provinceCode = strtoupper(substr($farmer->province ?? 'UNK', 0, 3)); // CAV, LAG, etc.
-        $dateCode = now()->format('ymd'); // YYMMDD
+        $provinceCode = strtoupper(substr($farmer->province ?? 'UNK', 0, 3));
+        $dateCode = now()->format('ymd');
         $farmerCode = 'F' . $farmer->id;
 
-        // Get daily count of orders for the farmer
         $dailyCount = self::where('farmer_id', $farmer->id)
-                        ->whereDate('created_at', now())
-                        ->count() + 1;
+            ->whereDate('created_at', now())
+            ->count() + 1;
 
         $sequence = str_pad($dailyCount, 4, '0', STR_PAD_LEFT);
-
         return "{$prefix}-{$provinceCode}-{$dateCode}-{$farmerCode}-{$sequence}";
     }
 
+    public function returnRequest()
+    {
+        return $this->hasOne(ReturnRequest::class);
+    }
 }
