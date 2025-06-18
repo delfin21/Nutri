@@ -114,7 +114,7 @@
       </div>
       <div class="modal-body">
         <div id="order-details-content">
-          <p class="text-muted">Loading...</p>
+          <p class="text-muted">Loading....</p>
         </div>
       </div>
       <div class="modal-footer">

@@ -130,7 +130,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body" id="user-details-content">
-        <p class="text-muted">Loading...</p>
+        <p class="text-muted">Loading....</p>
       </div>
     </div>
   </div>

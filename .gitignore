@@ -21,3 +21,8 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+# Prevent verification-bypass logic from overwriting live server
+app/Models/User.php
+routes/web.php
+routes/admin.php
+app/Http/Controllers/Admin/Auth/AdminAuthenticatedSessionController.php
