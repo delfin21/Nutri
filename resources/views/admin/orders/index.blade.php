@@ -61,43 +61,30 @@
                   <span class="status {{ strtolower(str_replace([' ', '/'], ['-', '-'], $order->status)) }}">
                     {{ strtoupper($order->status) }}
                   </span>
+
+                  @if ($order->returnRequest)
+                    <br>
+                    <span class="badge bg-warning text-dark mt-1">RETURN REQUESTED</span>
+                  @endif
                 </td>
-                <td>
-                  <div class="dropdown">
-                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" 
-                      type="button" 
-                      data-bs-toggle="dropdown" 
-                      data-bs-offset="0,10"
-                      data-bs-auto-close="outside"
-                      data-bs-display="static"
-                      style="padding: 4px 6px;">
-                      <i class="bi bi-three-dots-vertical"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                      <li>
-                        <a href="#" class="dropdown-item dropdown-hover"
-                          data-bs-toggle="modal" 
-                          data-bs-target="#orderDetailsModal" 
-                          onclick="loadOrderDetails({{ $order->id }})">
-                          View Details
-                        </a>
-                      </li>
-                      <li>
-                        <form method="POST" action="{{ route('admin.orders.updateStatus', $order->id) }}">
-                          @csrf
-                          @method('PATCH')
-                          <select name="status" class="form-select form-select-sm status-select mt-2" onchange="this.form.submit()">
-                            @foreach (['Pending', 'To Ship', 'Completed', 'Return/Refund', 'Cancelled'] as $status)
-                              <option value="{{ $status }}" {{ $order->status === $status ? 'selected' : '' }}>
-                                {{ $status }}
-                              </option>
-                            @endforeach
-                          </select>
-                        </form>
-                      </li>
-                    </ul>
-                  </div>
-                </td>
+
+<td class="d-flex gap-2">
+  <button class="btn btn-outline-primary btn-sm"
+          data-bs-toggle="modal"
+          data-bs-target="#orderDetailsModal"
+          onclick="loadOrderDetails({{ $order->id }})">
+    <i class="bi bi-eye"></i>
+  </button>
+
+  <button class="btn btn-outline-secondary btn-sm"
+          data-bs-toggle="modal"
+          data-bs-target="#orderActionModal"
+          onclick="openOrderActionModal({{ $order->id }}, '{{ $order->status }}')">
+    <i class="bi bi-pencil-square"></i>
+  </button>
+</td>
+
+
                 <td>{{ $order->created_at->format('d M Y, h:i A') }}</td>
               </tr>
             @empty
@@ -137,6 +124,38 @@
   </div>
 </div>
 
+<!-- Change Status Modal -->
+<div class="modal fade" id="orderActionModal" tabindex="-1" aria-labelledby="orderActionModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="order-action-form" method="POST">
+        @csrf
+        @method('PATCH')
+        <div class="modal-header">
+          <h5 class="modal-title">Update Order Status</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="status" class="form-label">Select New Status</label>
+            <select name="status" id="modal-status" class="form-select">
+              <option value="Pending">Pending</option>
+              <option value="To Ship">To Ship</option>
+              <option value="Completed">Completed</option>
+              <option value="Return/Refund">Return/Refund</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success w-100">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
 @push('scripts')
 <script>
   function loadOrderDetails(orderId) {
@@ -153,7 +172,13 @@
       });
   }
 
-  // Highlight order on URL param
+  // ✅ Move this function OUTSIDE of DOMContentLoaded
+  function openOrderActionModal(orderId, currentStatus) {
+    const form = document.getElementById('order-action-form');
+    form.action = `/admin/orders/${orderId}/status`; // ✅ Must match PATCH route
+    document.getElementById('modal-status').value = currentStatus;
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get('highlight_order');
@@ -163,22 +188,22 @@
       modal.show();
     }
 
-    // Dynamic dropup if near bottom
-document.querySelectorAll('.dropdown').forEach(dropdown => {
-  dropdown.addEventListener('show.bs.dropdown', function () {
-    const menu = dropdown.querySelector('.dropdown-menu');
-    const button = dropdown.querySelector('.dropdown-toggle');
-    const dropdownRect = button.getBoundingClientRect();
-    const menuHeight = menu.offsetHeight;
+    // Keep this for other dropdown behavior if still used
+    document.querySelectorAll('.dropdown').forEach(dropdown => {
+      dropdown.addEventListener('show.bs.dropdown', function () {
+        const menu = dropdown.querySelector('.dropdown-menu');
+        const button = dropdown.querySelector('.dropdown-toggle');
+        const dropdownRect = button.getBoundingClientRect();
+        const menuHeight = menu.offsetHeight;
 
-    if (dropdownRect.bottom + menuHeight > window.innerHeight) {
-      dropdown.classList.add('dropup');
-    } else {
-      dropdown.classList.remove('dropup');
-    }
-  });
-});
-
+        if (dropdownRect.bottom + menuHeight > window.innerHeight) {
+          dropdown.classList.add('dropup');
+        } else {
+          dropdown.classList.remove('dropup');
+        }
+      });
+    });
   });
 </script>
 @endpush
+
