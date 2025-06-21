@@ -15,36 +15,38 @@ class ProductController extends Controller
      * Get all products (for mobile/web)
      */
     public function index()
-    {
-        $imageBaseUrl = env('APP_MOBILE_IMAGE_URL', 'http://127.0.0.1:8000');
+{
+    $imageBaseUrl = 'http://10.0.2.2:8000'; // 👈 Must be accessible from Android emulator
 
-        $products = Product::with('farmer')->get()->map(function ($product) use ($imageBaseUrl) {
-            $imagePath = $product->image;
+    $products = Product::with('farmer')->get()->map(function ($product) use ($imageBaseUrl) {
+        $imagePath = $product->image;
 
-            if ($imagePath && str_starts_with($imagePath, 'http')) {
-                $imagePath = preg_replace('/^https?:\/\/(127\.0\.0\.1|localhost|192\.168\.\d+\.\d+)/', $imageBaseUrl, $imagePath);
-            } else if ($imagePath) {
-                $imagePath = $imageBaseUrl . '/storage/' . $imagePath;
-            } else {
-                $imagePath = $imageBaseUrl . '/img/default-product.jpg';
-            }
+        // Final image URL logic
+        if ($imagePath && str_starts_with($imagePath, 'http')) {
+            $finalImage = $imagePath;
+        } else if ($imagePath) {
+            $finalImage = $imageBaseUrl . '/storage/' . $imagePath;
+        } else {
+            $finalImage = $imageBaseUrl . '/img/default-product.jpg';
+        }
 
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'stock' => $product->stock,
-                'rating' => $product->rating ?? 0,
-                'category' => $product->category,
-                'image' => $imagePath,
-                'farmer_name' => optional($product->farmer)->business_name ?? 'Unknown',
-                'created_at' => $product->created_at,
-                'updated_at' => $product->updated_at,
-            ];
-        });
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'price' => $product->price,
+            'stock' => $product->stock,
+            'rating' => $product->rating ?? 0,
+            'category' => $product->category,
+            'image' => $finalImage, // ✅ this will now work in Flutter
+            'farmer_name' => optional($product->farmer)->business_name ?? 'Unknown',
+            'created_at' => $product->created_at,
+            'updated_at' => $product->updated_at,
+        ];
+    });
 
-        return response()->json(['products' => $products]);
-    }
+    return response()->json(['products' => $products]);
+}
+
 
     /**
      * Show a product by ID with relationships

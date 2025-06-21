@@ -15,6 +15,7 @@
                     <th>#</th>
                     <th>Order</th>
                     <th>Buyer</th>
+                    <th>Resolution</th>
                     <th>Status</th>
                     <th>Submitted</th>
                     <th>Action</th>
@@ -26,6 +27,7 @@
                         <td>{{ $req->id }}</td>
                         <td>{{ $req->order->order_code ?? 'N/A' }}</td>
                         <td>{{ $req->buyer->name ?? 'Unknown' }}</td>
+                        <td>{{ ucfirst($req->resolution_type) ?? 'N/A' }}</td>
                         <td>
                             <span class="badge bg-{{ $req->status === 'pending' ? 'warning text-dark' : ($req->status === 'approved' ? 'success' : 'danger') }}">
                                 {{ ucfirst($req->status) }}
@@ -34,7 +36,7 @@
                         <td>{{ $req->created_at->format('M d, Y') }}</td>
                         <td>
                             <a href="{{ route('farmer.returns.show', $req->id) }}" class="btn btn-sm btn-primary">
-                                View
+                                <i class="bi bi-eye"></i> View
                             </a>
                         </td>
                     </tr>

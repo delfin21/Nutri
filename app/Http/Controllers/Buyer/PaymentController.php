@@ -19,6 +19,7 @@ use App\Notifications\AdminAlertNotification;
 
 class PaymentController extends Controller
 {
+    // 🧾 Checkout Preview Summary
     public function checkoutPreview()
     {
         $cartIds = session('checkout_items', []);
@@ -50,6 +51,7 @@ class PaymentController extends Controller
         ]);
     }
 
+    // 💳 Process checkout form & redirect to PayMongo
     public function processForm(Request $request)
     {
         session([
@@ -73,9 +75,8 @@ class PaymentController extends Controller
         ]);
 
         $amount = 0;
-        $cartIds = session('checkout_items', []);
         $cartItems = Cart::with(['product' => fn($q) => $q->withTrashed()])
-            ->whereIn('id', $cartIds)
+            ->whereIn('id', session('checkout_items', []))
             ->where('buyer_id', Auth::id())
             ->get();
 
@@ -105,11 +106,13 @@ class PaymentController extends Controller
         return redirect()->away($redirectUrl);
     }
 
+    // ✅ Handle successful PayMongo or mock payment
     public function paymentSuccess()
     {
         $buyer = Auth::user();
         $intentId = request()->query('payment_intent') ?? 'test_' . Str::random(6);
         $method = request()->query('method') ?? 'unknown';
+        $responseData = json_encode(request()->all());
 
         $cartIds = session('checkout_items', []);
         $cartItems = Cart::with(['product' => fn($q) => $q->withTrashed()])
@@ -117,12 +120,15 @@ class PaymentController extends Controller
             ->where('buyer_id', $buyer->id)
             ->get();
 
-        $amount = 0;
+        if ($cartItems->isEmpty()) {
+            return redirect()->route('buyer.cart.index')->with('error', 'Cart is empty.');
+        }
+
+        $totalAmount = 0;
+        $orderIds = [];
 
         foreach ($cartItems as $item) {
             $product = $item->product;
-            $amount += $product->price * $item->quantity;
-
             $farmer = $product->user;
 
             $order = Order::create([
@@ -142,24 +148,97 @@ class PaymentController extends Controller
                 'buyer_postal_code' => session('checkout_postal_code'),
             ]);
 
+            $totalAmount += $order->total_price;
+            $orderIds[] = $order->id;
+
             $this->notifyUsers($order, $buyer);
         }
-
 
         Cart::whereIn('id', $cartIds)->delete();
         session()->forget('checkout_items');
 
         Payment::create([
             'intent_id' => $intentId,
+            'reference_id' => $intentId,
             'method' => $method,
-            'amount' => $amount * 100,
+            'amount' => $totalAmount * 100,
             'status' => 'paid',
             'buyer_id' => $buyer->id,
+            'order_ids' => json_encode($orderIds),
+            'is_test' => false,
+            'response_payload' => $responseData,
         ]);
 
-        return redirect()->route('buyer.orders.confirmation')->with('success', 'Order placed successfully!');
+        return redirect()->route('buyer.orders.confirmation')->with('success', 'Orders placed successfully!');
     }
 
+    // 🛠️ Mock Payment Success — updated to support multiple order_ids
+    public function mockSuccess(Request $request)
+    {
+        $request->validate([
+            'contact_email' => 'required|email',
+            'first_name' => 'required|string',
+            'last_name' => 'required|string',
+            'phone' => 'required|string',
+            'address' => 'required|string',
+            'city' => 'required|string',
+            'region' => 'required|string',
+            'postal_code' => 'required|string',
+        ]);
+
+        $buyer = Auth::user();
+        $cartItems = Cart::with('product')->where('buyer_id', $buyer->id)->get();
+
+        if ($cartItems->isEmpty()) {
+            return redirect()->route('buyer.cart.index')->with('error', 'Cart is empty.');
+        }
+
+        $totalAmount = 0;
+        $orderIds = [];
+
+        foreach ($cartItems as $item) {
+            $product = $item->product;
+            $totalAmount += $product->price * $item->quantity;
+
+            $order = Order::create([
+                'order_code' => Order::generateStructuredOrderCode($product->user),
+                'buyer_id' => $buyer->id,
+                'product_id' => $product->id,
+                'farmer_id' => $product->farmer_id ?? $product->user_id,
+                'quantity' => $item->quantity,
+                'price' => $product->price,
+                'total_price' => $product->price * $item->quantity,
+                'status' => 'Pending',
+                'payment_status' => 'paid',
+                'buyer_phone' => $request->phone,
+                'buyer_address' => $request->address,
+                'buyer_city' => $request->city,
+                'buyer_region' => $request->region,
+                'buyer_postal_code' => $request->postal_code,
+            ]);
+
+            $orderIds[] = $order->id;
+            $this->notifyUsers($order, $buyer);
+        }
+
+        Cart::where('buyer_id', $buyer->id)->delete();
+
+        Payment::create([
+            'intent_id' => 'mock_' . Str::random(10),
+            'method' => 'mock',
+            'amount' => $totalAmount * 100,
+            'status' => 'paid',
+            'buyer_id' => $buyer->id,
+            'order_ids' => json_encode($orderIds),
+            'is_test' => true,
+            'response_payload' => null,
+        ]);
+
+        session(['reference' => 'MOCK_REF_' . Str::random(6)]);
+        return redirect()->route('buyer.checkout.thankYou');
+    }
+
+    // 📢 Notify farmer and admins
     protected function notifyUsers(Order $order, $buyer)
     {
         if ($farmer = User::find($order->farmer_id)) {
@@ -180,7 +259,6 @@ class PaymentController extends Controller
         $reference = session('reference') ?? 'MOCK_REF_' . Str::random(6);
         return view('buyer.payment.thank-you', compact('reference'));
     }
-
 
     public function review()
     {
@@ -220,72 +298,5 @@ class PaymentController extends Controller
     public function paymentFailure()
     {
         return view('buyer.payment.failure');
-    }
-
-    public function mockSuccess(Request $request)
-    {
-        $request->validate([
-            'contact_email' => 'required|email',
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'phone' => 'required|string',
-            'address' => 'required|string',
-            'city' => 'required|string',
-            'region' => 'required|string',
-            'postal_code' => 'required|string',
-        ]);
-
-        $buyer = Auth::user();
-        $cartItems = Cart::with('product')->where('buyer_id', $buyer->id)->get();
-
-        if ($cartItems->isEmpty()) {
-            return redirect()->route('buyer.cart.index')->with('error', 'Cart is empty.');
-        }
-
-        $totalAmount = 0;
-
-        foreach ($cartItems as $item) {
-            $product = $item->product;
-            $totalAmount += $product->price * $item->quantity;
-
-    $order = Order::create([
-        'order_code' => Order::generateStructuredOrderCode($product->user),
-        'buyer_id' => $buyer->id,
-        'product_id' => $product->id,
-        'farmer_id' => $product->farmer_id ?? $product->user_id,
-        'quantity' => $item->quantity,
-        'price' => $product->price,
-        'total_price' => $product->price * $item->quantity,
-        'status' => 'Pending',
-        'payment_status' => 'paid',
-        
-        // ✅ Use request data directly (not session)
-        'buyer_phone' => $request->phone,
-        'buyer_address' => $request->address,
-        'buyer_city' => $request->city,
-        'buyer_region' => $request->region,
-        'buyer_postal_code' => $request->postal_code,
-    ]);
-
-
-            // Notifications
-            $this->notifyUsers($order, $buyer);
-        }
-
-        Cart::where('buyer_id', $buyer->id)->delete();
-
-        Payment::create([
-            'intent_id' => 'mock_' . Str::random(10),
-            'method' => 'mock',
-            'amount' => $totalAmount * 100,
-            'status' => 'paid',
-            'buyer_id' => $buyer->id,
-        ]);
-
-       $mockRef = 'MOCK_REF_' . Str::random(6);
-        session(['reference' => $mockRef]);
-
-        return redirect()->route('buyer.checkout.thankYou');
-
     }
 }

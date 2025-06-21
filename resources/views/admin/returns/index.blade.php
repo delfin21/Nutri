@@ -31,6 +31,7 @@
                         <th>#</th>
                         <th>Order ID</th>
                         <th>Buyer</th>
+                        <th>Resolution</th>
                         <th>Status</th>
                         <th>Submitted</th>
                         <th>Action</th>
@@ -43,7 +44,12 @@
                         <td>{{ $req->order->order_code ?? 'N/A' }}</td>
                         <td>{{ $req->buyer->name ?? 'Unknown' }}</td>
                         <td>
-                            <span class="badge bg-{{ $req->status === 'pending' ? 'warning' : ($req->status === 'approved' ? 'success' : 'danger') }}">
+                            <span class="badge bg-secondary text-white text-capitalize">
+                                {{ str_replace('_', ' ', $req->resolution_type ?? 'N/A') }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ $req->status === 'pending' ? 'warning text-dark' : ($req->status === 'approved' ? 'success' : 'danger') }}">
                                 {{ ucfirst($req->status) }}
                             </span>
                         </td>
@@ -56,7 +62,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">No return requests found.</td>
+                        <td colspan="7" class="text-center text-muted py-4">No return requests found.</td>
                     </tr>
                 @endforelse
                 </tbody>
@@ -64,5 +70,4 @@
         </div>
     </div>
 </div>
-
 @endsection

@@ -37,7 +37,8 @@ class FarmerReturnController extends Controller
 public function respond(Request $request, $id)
 {
     $request->validate([
-        'farmer_response' => 'required|string|min:5'
+        'farmer_response' => 'required|string|min:5',
+        'farmer_evidence.*' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
     ]);
 
     $return = ReturnRequest::whereHas('order', function ($q) {
@@ -46,9 +47,18 @@ public function respond(Request $request, $id)
 
     $return->farmer_response = $request->farmer_response;
     $return->responded_at = now();
+
+    if ($request->hasFile('farmer_evidence')) {
+        $paths = [];
+        foreach ($request->file('farmer_evidence') as $file) {
+            $paths[] = $file->store('returns/farmer', 'public');
+        }
+        $return->farmer_evidence_path = $paths;
+    }
+
     $return->save();
 
-    // ✅ Notify all admins
+    // Notify admins
     $admins = User::where('role', 'admin')->get();
     foreach ($admins as $admin) {
         $admin->notify(new AdminAlertNotification([
@@ -59,12 +69,13 @@ public function respond(Request $request, $id)
         ]));
     }
 
-    // ✅ Notify the buyer as well
+    // Notify buyer
     if ($return->buyer) {
         $return->buyer->notify(new ReturnRequestResolved($return, 'rebuttal'));
     }
 
-    return redirect()->route('farmer.dashboard')->with('success', 'Your response was submitted.');
+    return redirect()->route('farmer.returns.index')->with('success', 'Your response was submitted.');
 }
+
 
 }

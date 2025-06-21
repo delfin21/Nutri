@@ -10,36 +10,38 @@ class FarmerOrderController extends Controller
 {
     // GET /api/farmer/orders
     public function index(Request $request)
-    {
-        $user = $request->user();
+{
+    $user = $request->user();
 
-        \Log::info('Authenticated farmer ID: ' . $user->id);
+    \Log::info('Authenticated farmer ID: ' . $user->id);
 
-        $orders = Order::where('farmer_id', $user->id)
-            ->with('product', 'buyer')
-            ->latest()
-            ->get();
+    $orders = Order::where('farmer_id', $user->id)
+        ->with(['product', 'buyer'])
+        ->latest()
+        ->get();
 
-        \Log::info('Orders count for farmer ' . $user->id . ': ' . $orders->count());
-        \Log::info('Order IDs: ' . $orders->pluck('id')->join(', '));
+    \Log::info('Orders count for farmer ' . $user->id . ': ' . $orders->count());
+    \Log::info('Order IDs: ' . $orders->pluck('id')->join(', '));
 
-        $formattedOrders = $orders->map(function ($order) {
-            return [
-                'id' => $order->id,
-                'product_name' => $order->product->name,
-                'quantity' => $order->quantity,
-                'total_price' => $order->total_price,
-                'status' => $order->status,
-                'buyer_name' => $order->buyer->name ?? 'N/A',
-                'ordered_at' => $order->created_at->toDateTimeString(),
-            ];
-        });
+    $formattedOrders = $orders->map(function ($order) {
+        $product = $order->product;
+        $buyer = $order->buyer;
 
-        \Log::info('Formatted Orders: ' . json_encode($formattedOrders));
+        return [
+            'id' => $order->id,
+            'product_name' => $product?->name ?? 'Unknown',
+            'quantity' => $order->quantity,
+            'total_price' => $order->total_price ?? ($order->price * $order->quantity),
+            'status' => $order->status,
+            'buyer_name' => $buyer?->name ?? 'N/A',
+            'ordered_at' => $order->created_at->toDateTimeString(),
+        ];
+    });
 
-        return response()->json($formattedOrders);
-    }
+    \Log::info('Formatted Orders: ' . json_encode($formattedOrders));
 
+    return response()->json($formattedOrders);
+}
     // PUT /api/farmer/orders/{id}
     public function update(Request $request, $id)
     {

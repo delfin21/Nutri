@@ -21,3 +21,24 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+# 🔒 DO NOT PUSH LIVE-ONLY FILES (SSL + ENV)
+.env
+.env.backup
+.env.production
+
+# 🔒 NGINX SSL config (live server only, outside Laravel project but for awareness)
+/etc/nginx/sites-available/nutriapp
+
+# 🔒 Laravel global HTTPS forcing (only needed on live)
+app/Providers/AppServiceProvider.php
+
+# 🔒 Admin email verification removal (was edited on live only)
+app/Http/Controllers/Admin/Auth/AdminRegisteredUserController.php
+routes/admin.php
+
+# 🔒 Blade views edited live to use secure_asset()
+resources/views/home.blade.php
+resources/views/layouts/app.blade.php
+resources/views/layouts/guest.blade.php
+resources/views/auth/login.blade.php
+resources/views/auth/register.blade.php

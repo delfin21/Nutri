@@ -11,33 +11,34 @@ use Illuminate\Support\Facades\Auth;
 class ConversationController extends Controller
 {
     // Existing index() method remains unchanged
-    public function index(Request $request)
-    {
-        $user = Auth::user();
+public function index(Request $request)
+{
+    $user = Auth::user();
 
-        // Get all conversations where the user is participant
-        $conversations = Conversation::where('buyer_id', $user->id)
-            ->orWhere('farmer_id', $user->id)
-            ->with(['buyer', 'farmer', 'lastMessage']) // eager load relations
-            ->orderBy('updated_at', 'desc')
-            ->get();
+    $conversations = Conversation::where('buyer_id', $user->id)
+        ->orWhere('farmer_id', $user->id)
+        ->with(['buyer', 'farmer', 'lastMessage'])
+        ->orderBy('updated_at', 'desc')
+        ->get();
 
-        $response = $conversations->map(function ($conversation) use ($user) {
-            $otherUser = $conversation->buyer_id === $user->id ? $conversation->farmer : $conversation->buyer;
-            $lastMessage = $conversation->lastMessage;
+    $response = $conversations->map(function ($conversation) use ($user) {
+        $otherUser = $conversation->buyer_id === $user->id
+            ? $conversation->farmer
+            : $conversation->buyer;
 
-            return [
-                'conversationId'       => $conversation->id,
-                'otherUserName'        => $otherUser->name ?? 'Unknown',
-                'receiverId'           => $otherUser->id,
-                'lastMessage'          => $lastMessage ? $lastMessage->message : '',
-                'lastMessageTimestamp' => $lastMessage ? $lastMessage->created_at->format('H:i') : null,
-            ];
-        });
+        $lastMessage = $conversation->lastMessage;
 
-        return response()->json($response);
-    }
+        return [
+            'conversationId'       => $conversation->id,
+            'otherUserName'        => optional($otherUser)->name ?? 'Unknown',
+            'receiverId'           => optional($otherUser)->id ?? null,
+            'lastMessage'          => optional($lastMessage)->message ?? '',
+            'lastMessageTimestamp' => optional($lastMessage)?->created_at?->format('H:i') ?? null,
+        ];
+    });
 
+    return response()->json($response);
+}
     /**
      * Start a new conversation (if one doesn’t already exist).
      * Expects JSON: { "other_user_id": 123 }

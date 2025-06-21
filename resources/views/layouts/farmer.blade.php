@@ -127,11 +127,22 @@
         <div class="flex-grow-1">
             <main>
                 @if(session('success'))
-  <div class="alert alert-success alert-dismissible fade show" role="alert">
-    {{ session('success') }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-  </div>
-@endif
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                @endif
+                @if($errors->any())
+                <div class="alert alert-danger">
+                    <strong>Whoops!</strong> There were some problems with your submission:
+                    <ul class="mb-0">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
+
                 @yield('content')
             </main>
         </div>
@@ -139,6 +150,33 @@
 
     <!-- JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     @stack('scripts')
 </body>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const input = document.querySelector('input[type="file"][name="farmer_evidence[]"]');
+    const previewContainer = document.createElement('div');
+    previewContainer.classList.add('mt-3', 'd-flex', 'gap-2', 'flex-wrap');
+    input?.insertAdjacentElement('afterend', previewContainer);
+
+    input?.addEventListener('change', function () {
+        previewContainer.innerHTML = ''; // clear old
+        Array.from(this.files).forEach(file => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'img-thumbnail';
+                    img.style.width = '120px';
+                    previewContainer.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+});
+</script>
+
 </html>

@@ -89,6 +89,9 @@ Route::prefix('farmer')->name('farmer.')->middleware(['auth'])->group(function (
     Route::get('/returns', [FarmerReturnController::class, 'index'])->name('returns.index');
     Route::get('/returns/{id}', [FarmerReturnController::class, 'show'])->name('returns.show');
     Route::post('/returns/{id}/respond', [FarmerReturnController::class, 'respond'])->name('returns.respond');
+    Route::post('/returns/{id}/approve', [FarmerReturnController::class, 'approve'])->name('returns.approve');
+    Route::post('/returns/{id}/reject', [FarmerReturnController::class, 'reject'])->name('returns.reject');
+
 
     // 💬 Messaging
     Route::get('/messages/inbox', [MessageController::class, 'inbox'])->name('messages.inbox');

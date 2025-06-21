@@ -131,7 +131,12 @@
                                         Return / Refund
                                     </a>
                                 @elseif ($order->returnRequest && $order->returnRequest->status === 'pending')
-                                    <span class="badge bg-warning text-dark">Return Requested</span>
+                                <div class="d-flex flex-column align-items-end">
+                                    <span class="badge bg-warning text-dark mb-1">Return Requested</span>
+                                    <a href="{{ route('buyer.returns.show', $order->returnRequest->id) }}" class="btn btn-outline-secondary btn-sm">
+                                        View Return Details
+                                    </a>
+                                </div>
                                 @elseif ($order->returnRequest)
                                     @if ($order->returnRequest->status === 'rejected')
                                         <span class="badge bg-danger text-white">Return Rejected</span>

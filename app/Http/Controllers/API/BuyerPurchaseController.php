@@ -18,20 +18,25 @@ class BuyerPurchaseController extends Controller
             ->get();
 
         $formattedOrders = $orders->map(function ($order) {
+            $product = $order->product;
+            $farmer = $product?->user;
+
             return [
                 'id' => $order->id,
-                'farmer' => $order->product->user->name ?? 'Unknown',
-                'product_name' => $order->product->name ?? 'Unnamed',
+                'product_name' => $product?->name ?? 'Unnamed',
+                'farmer' => $farmer?->name ?? 'Unknown',
+                'farmer_id' => $farmer?->id ?? null,
+                'conversation_id' => $order->conversation_id ?? null,
                 'weight' => $order->quantity . ' kg',
                 'price_per_kg' => (float) $order->price,
-                'total_price' => (float) $order->price * $order->quantity,
+                'total_price' => (float) ($order->total_price ?? $order->price * $order->quantity),
                 'status' => $order->status,
-                'image_url' => $order->product->image
-                    ? url('storage/' . $order->product->image)
+                'image_url' => $product?->image
+                    ? url('storage/' . $product->image)
                     : null,
-                // ✅ Add these:
-                'farmer_id' => $order->product->user_id ?? null,
-                'conversation_id' => $order->conversation_id ?? null,
+
+                // ✅ Flag to show "Return Requested" badge in Flutter
+                'has_return_request' => $order->returnRequest()->exists(),
             ];
         });
 

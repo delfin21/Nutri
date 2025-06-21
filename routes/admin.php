@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Http\Controllers\Admin\AdminPaymentController;
+
 
 use App\Http\Controllers\Admin\Auth\AdminAuthenticatedSessionController;
 use App\Http\Controllers\Admin\Auth\AdminRegisteredUserController;
@@ -96,6 +98,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::resource('products', AdminProductController::class);
     Route::get('/products-export', [AdminProductController::class, 'export'])->name('products.export');
 
+    // Payments
+    Route::get('/payments', [AdminPaymentController::class, 'index'])->name('payments.index');
+    Route::get('/payments/{id}', [AdminPaymentController::class, 'show'])->name('payments.show');
+
     // ✅ Product Approval
     Route::patch('/products/{id}/approve', [AdminProductController::class, 'approve'])->name('products.approve');
     Route::patch('/products/{id}/reject', [AdminProductController::class, 'reject'])->name('products.reject');
@@ -156,4 +162,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/returns/{id}', [AdminReturnRequestController::class, 'show'])->name('returns.show');
     Route::post('/returns/{id}/approve', [AdminReturnRequestController::class, 'approve'])->name('returns.approve');
     Route::post('/returns/{id}/reject', [AdminReturnRequestController::class, 'reject'])->name('returns.reject');
+    Route::post('/returns/{id}/replacement-sent', [AdminReturnRequestController::class, 'markReplacementSent'])->name('returns.markReplacementSent');
+
 });

@@ -1,3 +1,30 @@
+<div class="card shadow-sm rounded-3 mb-4">
+    <div class="card-header bg-warning text-dark fw-bold">
+        🏷 Store Credits
+    </div>
+    <div class="card-body">
+        @php
+            $credits = \App\Models\StoreCredit::where('buyer_id', Auth::id())->latest()->get();
+            $totalCredit = $credits->sum('amount');
+        @endphp
+
+        <p><strong>Total Available Credit:</strong> ₱{{ number_format($totalCredit, 2) }}</p>
+
+        @if ($credits->count())
+            <ul class="list-group mt-3">
+                @foreach ($credits as $credit)
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ $credit->description ?? 'Credit issued' }}
+                        <span class="badge bg-success">₱{{ number_format($credit->amount, 2) }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        @else
+            <div class="alert alert-info mt-3">You have no issued store credits at this time.</div>
+        @endif
+    </div>
+</div>
+
 <div class="card shadow-sm rounded-3">
     <div class="card-header bg-success text-white fw-bold">
         Payment Methods

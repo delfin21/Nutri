@@ -62,21 +62,38 @@
                             <i class="bi bi-clipboard-check me-1"></i> My Purchase
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('buyer.orders.history', ['status' => 'Return/Refund']) }}"
+                        class="nav-link {{ request()->fullUrlIs('*Return*') ? 'fw-bold text-warning' : 'text-dark' }}">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> My Returns
+                        </a>
+                    </li>
+
+                    {{-- Optional Store Credit tab (if implementing store credit tracking) --}}
+                    <li class="nav-item">
+                        <a href="{{ route('buyer.profile.show', ['tab' => 'store_credit']) }}"
+                        class="nav-link {{ request('tab') === 'store_credit' ? 'fw-bold text-primary' : 'text-dark' }}">
+                            <i class="bi bi-wallet2 me-1"></i> Store Credits
+                        </a>
+                    </li>
+
                 </ul>
             </div>
         </div>
 
         <!-- Right Section: Dynamic Based on Tab -->
         <div class="col-md-9">
-            @if (request('tab') === 'payments')
-                @include('buyer.profile.sections.payments')
-            @elseif (request('tab') === 'address')
-                @include('buyer.profile.sections.address')
-            @elseif (request('tab') === 'password')
-                @include('buyer.profile.sections.password')
-            @else
-                @include('buyer.profile.sections.profile')
-            @endif
+        @if (request('tab') === 'payments')
+            @include('buyer.profile.sections.payments')
+        @elseif (request('tab') === 'address')
+            @include('buyer.profile.sections.address')
+        @elseif (request('tab') === 'password')
+            @include('buyer.profile.sections.password')
+        @elseif (request('tab') === 'store_credit')
+            @include('buyer.profile.sections.store_credit')
+        @else
+            @include('buyer.profile.sections.profile')
+        @endif
         </div>
     </div>
 </div>

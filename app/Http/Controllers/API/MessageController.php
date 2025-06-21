@@ -11,23 +11,30 @@ use Illuminate\Support\Facades\Auth;
 class MessageController extends Controller
 {
     // Get all messages for a conversation
-    public function index($conversationId)
-    {
-        $user = Auth::user();
+  public function index($conversationId)
+{
+    \Log::info('Loading messages for conversation ID: ' . $conversationId);
 
-        $conversation = Conversation::where('id', $conversationId)
-            ->where(function ($query) use ($user) {
-                $query->where('buyer_id', $user->id)
-                      ->orWhere('farmer_id', $user->id);
-            })->firstOrFail();
+    $user = Auth::user();
+    \Log::info('Authenticated user ID: ' . $user->id);
 
-        $messages = Message::where('conversation_id', $conversation->id)
-            ->orderBy('created_at', 'asc')
-            ->get();
+    $conversation = Conversation::where('id', $conversationId)
+        ->where(function ($query) use ($user) {
+            $query->where('buyer_id', $user->id)
+                  ->orWhere('farmer_id', $user->id);
+        })
+        ->firstOrFail();
 
-        return response()->json($messages);
-    }
+    \Log::info('Found conversation. Fetching messages...');
 
+    $messages = Message::where('conversation_id', $conversation->id)
+        ->orderBy('created_at', 'asc')
+        ->get();
+
+    \Log::info('Message count: ' . $messages->count());
+
+    return response()->json($messages);
+}
     // Send a new message in a conversation
     public function store(Request $request, $conversationId)
     {

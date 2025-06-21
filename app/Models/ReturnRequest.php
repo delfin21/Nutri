@@ -12,7 +12,18 @@ class ReturnRequest extends Model
         'reason',
         'evidence_path',
         'status',
+        'tracking_code',
+        'resolution_type',
+        'farmer_response',
+        'responded_at',
         'admin_response',
+        'farmer_evidence_path',
+
+    ];
+
+    protected $casts = [
+        'evidence_path' => 'array',
+        'farmer_evidence_path' => 'array',
     ];
 
     /**

@@ -28,45 +28,57 @@ class ReturnRequestController extends Controller
         return view('buyer.returns.create', compact('order'));
     }
 
-    public function store(Request $request, $orderId)
-    {
-        $order = Order::where('id', $orderId)
-                    ->where('buyer_id', Auth::id())
-                    ->firstOrFail();
+public function store(Request $request, $orderId)
+{
+    $order = Order::where('id', $orderId)
+                ->where('buyer_id', Auth::id())
+                ->firstOrFail();
 
-        $request->validate([
-            'reason' => 'required|string|min:10',
-            'evidence' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-        ]);
+    $request->validate([
+        'reason' => 'required|string|min:10',
+        'evidence' => 'required|array|min:1',
+        'evidence.*' => 'image|mimes:jpg,jpeg,png|max:2048',
+        'tracking_code' => 'nullable|string|max:255',
+        'resolution_type' => 'required|in:refund,replacement,store_credit',
+        'declaration' => 'accepted',
+    ]);
 
-        $path = $request->file('evidence')->store('returns', 'public');
-
-        $returnRequest = ReturnRequest::create([
-            'order_id' => $order->id,
-            'buyer_id' => Auth::id(),
-            'reason' => $request->input('reason'),
-            'evidence_path' => $path,
-            'status' => 'pending',
-        ]);
-
-        // ✅ Notify the farmer
-        if ($order->farmer) {
-            $order->farmer->notify(new ReturnRequestFiled($returnRequest));
-        }
-
-        // ✅ Notify all admins
-        $admins = User::where('role', 'admin')->get();
-        foreach ($admins as $admin) {
-            $admin->notify(new AdminAlertNotification([
-                'message' => 'A return request was filed for Order ' . $order->order_code . ' by ' . Auth::user()->name . '.',
-                'icon' => 'bi-box-arrow-in-left',
-                'type' => 'return-request',
-                'link' => route('admin.returns.show', $returnRequest->id),
-            ]));
-        }
-
-        return redirect()->route('buyer.orders.history')->with('success', 'Your return request has been submitted and is under review.');
+    // ✅ Store all image paths
+    $paths = [];
+    foreach ($request->file('evidence') as $file) {
+        $paths[] = $file->store('returns/buyer', 'public');
     }
+
+    $returnRequest = ReturnRequest::create([
+        'order_id' => $order->id,
+        'buyer_id' => Auth::id(),
+        'reason' => $request->input('reason'),
+        'evidence_path' => json_encode($paths),
+        'tracking_code' => $request->input('tracking_code'),
+        'resolution_type' => $request->input('resolution_type'),
+        'status' => 'pending',
+    ]);
+
+    // ✅ Notify farmer
+    if ($order->farmer) {
+        $order->farmer->notify(new ReturnRequestFiled($returnRequest));
+    }
+
+    // ✅ Notify all admins
+    $admins = User::where('role', 'admin')->get();
+    foreach ($admins as $admin) {
+        $admin->notify(new AdminAlertNotification([
+            'message' => 'A return request was filed for Order ' . $order->order_code . ' by ' . Auth::user()->name . '.',
+            'icon' => 'bi-box-arrow-in-left',
+            'type' => 'return-request',
+            'link' => route('admin.returns.show', $returnRequest->id),
+        ]));
+    }
+
+    return redirect()->route('buyer.orders.history')->with('success', 'Your return request has been submitted and is under review.');
+}
+
+
 
     public function show($id)
     {

@@ -1,78 +1,54 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
-use App\Models\Conversation;
+use App\Models\Product;
 
-class BuyerPurchaseController extends Controller
+class BuyerCheckoutController extends Controller
 {
-    public function index(Request $request)
+    public function checkout(Request $request)
     {
         $user = $request->user();
 
-        $orders = Order::with(['product.user'])
-            ->where('buyer_id', $user->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $validated = $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'full_name' => 'required|string',
+            'phone' => 'required|string',
+            'street' => 'required|string',
+            'region' => 'required|string',
+            'city' => 'required|string',
+            'postal_code' => 'required|string',
+            'payment_method' => 'required|string|in:gcash,card,maya,cod'
+        ]);
 
-        $formattedOrders = $orders->map(function ($order) {
-            return [
-                'id' => $order->id,
-                'farmer' => $order->product->user->name ?? 'Unknown',
-                'farmer_id' => $order->product->user->id ?? null, // ✅ needed for chat
-                'conversation_id' => $order->conversation_id ?? null, // ✅ needed for chat
-                'product_name' => $order->product->name ?? 'Unnamed',
-                'weight' => $order->quantity . ' kg',
-                'price_per_kg' => (float) $order->price,
-                'total_price' => (float) $order->price * $order->quantity,
-                'status' => $order->status,
-                'image_url' => $order->product->image
-                    ? url('storage/' . $order->product->image)
-                    : null,
-            ];
-        });
+        $product = Product::findOrFail($validated['product_id']);
+
+        $order = Order::create([
+            'order_code' => strtoupper(uniqid('ORD')),
+            'buyer_id' => $user->id,
+            'farmer_id' => $product->farmer_id,
+            'product_id' => $product->id,
+            'quantity' => $validated['quantity'],
+            'price' => $product->price,
+            'total_price' => $product->price * $validated['quantity'],
+            'status' => 'pending',
+            'buyer_name' => $validated['full_name'],
+            'buyer_phone' => $validated['phone'],
+            'buyer_address' => $validated['street'],
+            'buyer_region' => $validated['region'],
+            'buyer_city' => $validated['city'],
+            'buyer_postal_code' => $validated['postal_code'],
+            'payment_method' => $validated['payment_method'],
+        ]);
 
         return response()->json([
-            'orders' => $formattedOrders,
-        ]);
-    }
-
-    public function confirmDelivery($id, Request $request)
-    {
-        $order = Order::where('id', $id)
-            ->where('buyer_id', $request->user()->id)
-            ->firstOrFail();
-
-        if ($order->status !== 'shipped') {
-            return response()->json([
-                'message' => 'Cannot confirm delivery. Status must be shipped.'
-            ], 400);
-        }
-
-        $order->status = 'completed';
-        $order->save();
-
-        return response()->json(['message' => 'Order marked as completed.']);
-    }
-
-    public function cancel($id, Request $request)
-    {
-        $order = Order::where('id', $id)
-            ->where('buyer_id', $request->user()->id)
-            ->firstOrFail();
-
-        if (!in_array($order->status, ['pending', 'to_ship'])) {
-            return response()->json([
-                'message' => 'Cannot cancel after order is shipped.'
-            ], 400);
-        }
-
-        $order->status = 'canceled';
-        $order->save();
-
-        return response()->json(['message' => 'Order canceled.']);
+            'message' => 'Order placed successfully!',
+            'order_id' => $order->id,
+            'order_code' => $order->order_code,
+        ], 201);
     }
 }
