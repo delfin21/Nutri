@@ -12,8 +12,8 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
-<link rel="stylesheet" href="{{ secure_asset('css/style.css') }}">
-<link rel="stylesheet" href="{{ secure_asset('css/custom.css') }}">
+<link rel="stylesheet" href="{{ asset('css/style.css') }}">
+<link rel="stylesheet" href="{{ asset('css/custom.css') }}">
 
         <!-- Styles -->
         @livewireStyles

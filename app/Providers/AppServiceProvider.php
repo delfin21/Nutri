@@ -25,9 +25,10 @@ class AppServiceProvider extends ServiceProvider
 public function boot(): void
 {
     // ✅ Force HTTPS in production
-    if (env('APP_ENV') !== 'local') {
-        \Illuminate\Support\Facades\URL::forceScheme('https');
+    if (env('APP_ENV') === 'local') {
+        \Illuminate\Support\Facades\URL::forceScheme('http');
     }
+
 
     // ✅ Use Bootstrap 5 for pagination
     \Illuminate\Pagination\Paginator::useBootstrapFive();
