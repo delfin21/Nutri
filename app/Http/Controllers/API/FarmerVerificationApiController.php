@@ -10,8 +10,7 @@ class FarmerVerificationApiController extends Controller
 {
     public function verify(Request $request)
     {
-        public function verify(Request $request)
-{
+
     $request->validate([
         'document' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120'
     ]);

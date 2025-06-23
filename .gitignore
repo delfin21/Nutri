@@ -34,7 +34,7 @@ app/Providers/AppServiceProvider.php
 
 # 🔒 Admin email verification removal (was edited on live only)
 app/Http/Controllers/Admin/Auth/AdminRegisteredUserController.php
-routes/admin.php
+# routes/admin.php
 
 # 🔒 Blade views edited live to use secure_asset()
 resources/views/home.blade.php
