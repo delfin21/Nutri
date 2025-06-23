@@ -29,6 +29,8 @@ use App\Http\Controllers\Farmer\FarmerNotificationController;
 use App\Http\Controllers\Farmer\FarmerVerificationController;
 use App\Http\Controllers\Buyer\ReturnRequestController as BuyerReturnRequestController;
 use App\Http\Controllers\Farmer\FarmerReturnController;
+use Illuminate\Support\Facades\Log;
+
 
 // 🌐 Public Pages
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -120,7 +122,10 @@ Route::prefix('buyer')->name('buyer.')->middleware(['auth'])->group(function () 
     });
 
     // 💳 Payment Flow
-    Route::get('/payment/form', fn () => view('buyer.payment.form'))->name('payment.form');
+    Route::get('/payment/form', [PaymentController::class, 'showForm'])->name('payment.form');
+    Route::get('/payment/verify', fn () => view('buyer.payment.verify-upload'))->name('payment.verify');
+    Route::get('/payment/qr-scan', fn () => view('buyer.payment.qr-scan'))->name('payment.qrScan');
+    Route::get('/payment/select', fn () => view('buyer.payment.select-method'))->name('payment.select');
     Route::post('/payment/process', [PaymentController::class, 'processForm'])->name('payment.process');
     Route::post('/payment/mock-process', [PaymentController::class, 'mockSuccess'])->name('payment.mockSuccess');
     Route::get('/payment/success', [PaymentController::class, 'paymentSuccess'])->name('payment.success');
@@ -128,13 +133,19 @@ Route::prefix('buyer')->name('buyer.')->middleware(['auth'])->group(function () 
     Route::get('/payment/review', [PaymentController::class, 'review'])->name('payment.review');
     Route::get('/payment/test-card', [PaymentTestController::class, 'showTestForm'])->name('payment.testCard');
     Route::post('/payment/test-card/process', [PaymentTestController::class, 'createIntent'])->name('payment.testCard.process');
-
+    
     Route::get('/checkout/preview', [PaymentController::class, 'checkoutPreview'])->name('checkout.preview');
     Route::post('/checkout/create-session', [PaymentController::class, 'createCheckoutSession'])->name('checkout.createSession');
-    Route::get('/checkout/thank-you', [PaymentController::class, 'thankYou'])->name('checkout.thankYou');
+    Route::get('/payment/thank-you', [PaymentController::class, 'thankYou'])->name('payment.thankYou');
+
+    // Reciepts
+    Route::get('/receipt/{payment}', [PaymentController::class, 'showReceipt'])->name('payments.receipt');
+
 
     // 📦 Orders
-    Route::get('/orders/history', [OrderController::class, 'history'])->name('orders.history');
+    Route::get('/orders/history', function () {
+    return redirect()->route('buyer.profile.show', ['tab' => 'purchase']); 
+    })->name('orders.history');
     Route::patch('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     Route::patch('/orders/{order}/confirm', [OrderController::class, 'confirm'])->name('orders.confirm');
     Route::post('/orders/{order}/buy-again', [OrderController::class, 'buyAgain'])->name('orders.buyAgain');
@@ -151,8 +162,10 @@ Route::prefix('buyer')->name('buyer.')->middleware(['auth'])->group(function () 
     // 👤 Profile
     Route::get('/profile', [UserProfileController::class, 'show'])->name('profile.show');
     Route::post('/profile/update', [UserProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/password', [UserProfileController::class, 'updatePassword'])->name('profile.updatePassword');
     Route::get('/profile/address', [BuyerAddressController::class, 'edit'])->name('profile.address');
     Route::post('/profile/address', [BuyerAddressController::class, 'update'])->name('profile.updateAddress');
+
 
     // 👥 Following
     Route::post('/follow/{farmerId}', [FollowController::class, 'follow'])->name('follow');
@@ -183,6 +196,11 @@ Route::get('/payments', [PaymongoPaymentController::class, 'index'])->name('paym
 
 // 🔄 Paymongo Webhook
 Route::post('/webhooks/paymongo', [App\Http\Controllers\WebhookController::class, 'handle']);
+
+Route::get('/test-log', function () {
+    Log::info('[TEST] Laravel logging works!');
+    return 'Logging successful!';
+});
 
 // 🛡 Laravel Auth Routes
 require __DIR__.'/auth.php';

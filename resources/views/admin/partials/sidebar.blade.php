@@ -29,6 +29,11 @@
             </a>
         </li>
         <li>
+            <a href="{{ route('admin.payments.index') }}" class="nav-link {{ request()->routeIs('admin.payments.*') ? 'active' : 'text-dark' }}">
+                <i class="bi bi-receipt-cutoff me-2"></i> Transaction Logs
+            </a>
+        </li>
+        <li>
             <a href="{{ route('admin.returns.index') }}" class="nav-link {{ request()->routeIs('admin.returns.*') ? 'active' : 'text-dark' }}">
                 <i class="bi bi-arrow-counterclockwise me-2"></i> Return Requests
             </a>

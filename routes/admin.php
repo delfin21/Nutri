@@ -7,8 +7,7 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Http\Controllers\Admin\AdminPaymentController;
-
-
+use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\Auth\AdminAuthenticatedSessionController;
 use App\Http\Controllers\Admin\Auth\AdminRegisteredUserController;
 use App\Http\Controllers\Admin\Auth\AdminForgotPasswordController;
@@ -101,6 +100,9 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     // Payments
     Route::get('/payments', [AdminPaymentController::class, 'index'])->name('payments.index');
     Route::get('/payments/{id}', [AdminPaymentController::class, 'show'])->name('payments.show');
+    Route::get('/receipt/{payment}', [AdminPaymentController::class, 'showReceipt'])->name('payments.receipt');
+    Route::post('/payments/{payment}/verify', [AdminPaymentController::class, 'markAsVerified'])->name('payments.verify');
+
 
     // ✅ Product Approval
     Route::patch('/products/{id}/approve', [AdminProductController::class, 'approve'])->name('products.approve');

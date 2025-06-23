@@ -151,6 +151,11 @@
                                     @endif
                                 @endif
 
+                                @if ($order->payment_id)
+                                    <a href="{{ route('buyer.payments.receipt', ['payment' => $order->payment_id]) }}" class="btn btn-outline-secondary btn-sm">
+                                        View Receipt
+                                    </a>
+                                @endif
                                 {{-- Rate --}}
                                 @if (strtolower($order->status) === 'completed' && !$order->rating)
                                     <a href="{{ route('buyer.orders.rate.create', $order->id) }}" class="btn btn-outline-primary btn-sm">

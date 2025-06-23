@@ -22,11 +22,53 @@
   </li>
 </ul>
 
-@if ($payment->response_payload)
-  <label><strong>Response Payload (JSON):</strong></label>
-  <pre class="bg-dark text-white p-3 rounded" style="max-height: 300px; overflow: auto; font-size: 0.875rem;">
-{{ json_encode(json_decode($payment->response_payload), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}
-  </pre>
+{{-- 📦 Decode response payload if it's JSON --}}
+@php
+  $payload = json_decode($payment->response_payload, true);
+@endphp
+
+@if (is_array($payload))
+  <div class="card border mb-3">
+    <div class="card-header bg-light"><strong>📄 QR Payment Details</strong></div>
+    <div class="card-body">
+      @if (!empty($payload['qr_reference']))
+        <p><strong>Reference No:</strong> {{ $payload['qr_reference'] }}</p>
+      @endif
+      @if (!empty($payload['qr_name']))
+        <p><strong>Name Used:</strong> {{ $payload['qr_name'] }}</p>
+      @endif
+      @if (!empty($payload['qr_mobile']))
+        <p><strong>Mobile Used:</strong> {{ $payload['qr_mobile'] }}</p>
+      @endif
+      @if (!empty($payload['proof_path']))
+        @php
+            $filename = basename($payload['proof_path']);
+        @endphp
+        <p><strong>Uploaded Proof:</strong></p>
+        <img src="{{ asset('storage/payments/' . $filename) }}"
+             alt="Uploaded Proof"
+             class="img-fluid rounded border"
+             style="max-height: 300px;">
+      @endif
+
+      @if (empty($payload['qr_reference']) && empty($payload['qr_name']) && empty($payload['qr_mobile']) && empty($payload['proof_path']))
+        <div class="text-muted fst-italic">No QR-specific fields found in payload.</div>
+      @endif
+    </div>
+  </div>
 @else
   <div class="alert alert-secondary">No response payload recorded.</div>
+@endif
+
+{{-- ✅ Verification Controls --}}
+@if (! $payment->is_verified)
+  <div class="text-center mt-4">
+    <button class="btn btn-success" onclick="markAsVerified({{ $payment->id }})">
+      ✅ Mark as Verified
+    </button>
+  </div>
+@else
+  <div class="text-center mt-4">
+    <span class="badge bg-primary fs-6">✔️ Already Verified</span>
+  </div>
 @endif

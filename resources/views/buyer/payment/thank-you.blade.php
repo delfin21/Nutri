@@ -1,13 +1,19 @@
 @extends('layouts.app')
 
-@section('title', 'Thank You')
-
 @section('content')
-<div class="container mt-5 text-center">
-    <h2 class="mb-3 text-success">✅ Payment Successful!</h2>
-    <p>Thank you for your order.</p>
-    <p>Your reference ID: <strong>{{ $reference }}</strong></p>
+<div class="container text-center py-5">
+  <h2 class="mb-3">✅ Payment Submitted</h2>
+  <p class="text-muted">
+    Thank you! Your order has been placed successfully. We are verifying your payment.
+  </p>
 
-    <a href="{{ route('buyer.orders.history') }}" class="btn btn-primary mt-4">View My Orders</a>
+  <h5 class="mt-4">Reference Code:</h5>
+  <div class="alert alert-success w-50 mx-auto">
+    {{ session('reference') ?? 'N/A' }}
+  </div>
+
+  <a href="{{ route('buyer.profile.show', ['tab' => 'purchase']) }}" class="btn btn-primary mt-3">
+    View My Purchase
+  </a>
 </div>
 @endsection

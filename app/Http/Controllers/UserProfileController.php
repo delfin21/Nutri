@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class UserProfileController extends Controller
 {
@@ -43,13 +44,44 @@ class UserProfileController extends Controller
         return redirect()->route('farmer.products.index')
                          ->with('success', 'Product created successfully.');
     }
-    public function show(Request $request)
-{
-    $tab = $request->query('tab', 'profile'); // default to 'profile'
-    $user = Auth::user();
 
-    return view('buyer.profile', compact('user', 'tab'));
-}
+    public function show(Request $request)
+    {
+        $tab = $request->query('tab', 'profile');
+        $user = Auth::user();
+
+        $payment = null;
+        $orders = collect();
+        $returns = collect();
+        $payments = collect(); // <- Add this
+
+        if ($tab === 'purchase') {
+            $orders = $user->orders()->with(['product', 'rating', 'returnRequest', 'farmer'])->latest()->get();
+        }
+
+        if ($tab === 'return') {
+            $returns = \App\Models\ReturnRequest::with(['order.product'])
+                        ->whereHas('order', fn($q) => $q->where('buyer_id', $user->id))
+                        ->latest()
+                        ->get();
+        }
+
+        if ($tab === 'receipt' && $request->has('payment_id')) {
+            $payment = \App\Models\Payment::findOrFail($request->payment_id);
+            if ($payment->buyer_id !== $user->id) {
+                abort(403);
+            }
+            $orders = $payment->orders;
+        }
+
+        if ($tab === 'receipts') {
+            $payments = \App\Models\Payment::where('buyer_id', $user->id)->latest()->get();
+        }
+
+        return view('buyer.profile', compact('user', 'tab', 'payment', 'orders', 'returns', 'payments'));
+    }
+
+
 
 public function update(Request $request)
 {

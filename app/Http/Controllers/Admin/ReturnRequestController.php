@@ -144,7 +144,7 @@ class ReturnRequestController extends Controller
 
         // Optional: notify buyer
         if ($return->buyer) {
-            $return->buyer->notify(new \App\Notifications\ReturnRequestResolved($return, 'replacement'));
+            $return->buyer->notify(new ReturnRequestResolved($return, 'replacement'));
         }
 
         return redirect()->back()->with('success', 'Replacement marked as sent.');

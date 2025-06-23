@@ -58,6 +58,11 @@ class Order extends Model
         return $this->belongsTo(User::class, 'farmer_id');
     }
 
+    public function payment()
+    {
+        return $this->belongsTo(Payment::class);
+    }
+
     public function alreadyRated()
     {
         return $this->product

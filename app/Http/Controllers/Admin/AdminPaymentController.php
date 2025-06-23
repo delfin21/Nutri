@@ -18,5 +18,12 @@ class AdminPaymentController extends Controller
         return view('admin.payments.partials.show', compact('payment'));
     }
 
+    public function markAsVerified(Payment $payment)
+    {
+        $payment->update(['is_verified' => true]);
+        return response()->json(['status' => 'ok']);
+    }
+
+
 }
 

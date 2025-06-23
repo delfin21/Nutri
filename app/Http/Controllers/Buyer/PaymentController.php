@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Buyer;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\Cart;
@@ -13,13 +12,212 @@ use App\Models\Order;
 use App\Models\User;
 use App\Models\Product;
 use App\Models\Payment;
-use App\Services\PaymongoService;
 use App\Notifications\FarmerOrderPlacedNotification;
 use App\Notifications\AdminAlertNotification;
 
 class PaymentController extends Controller
 {
-    // 🧾 Checkout Preview Summary
+    public function showForm()
+    {
+        return view('buyer.payment.form');
+    }
+
+    public function processForm(Request $request)
+    {
+        $request->validate([
+            'contact_email' => 'required|email',
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'address' => 'required|string|max:255',
+            'city' => 'required|string|max:100',
+            'region' => 'required|string|max:100',
+            'postal_code' => 'required|string|max:20',
+            'phone' => 'required|string|max:20',
+            'payment_method' => 'required|in:qr',
+        ]);
+
+        session([
+            'checkout_email' => $request->contact_email,
+            'checkout_first_name' => $request->first_name,
+            'checkout_last_name' => $request->last_name,
+            'checkout_phone' => $request->phone,
+            'checkout_address' => $request->address,
+            'checkout_city' => $request->city,
+            'checkout_region' => $request->region,
+            'checkout_postal_code' => $request->postal_code,
+        ]);
+
+        return redirect()->route('buyer.payment.qrScan');
+    }
+
+    public function qrScan()
+    {
+        return view('buyer.payment.qr-scan');
+    }
+
+    public function verifyUpload()
+    {
+        return view('buyer.payment.verify-upload');
+    }
+
+    public function mockSuccess(Request $request)
+    {
+        $request->validate([
+            'payment_method' => 'required|in:gcash,paymaya,card',
+            'qr_reference' => 'nullable|string',
+            'qr_name' => 'nullable|string',
+            'qr_mobile' => 'nullable|string',
+            'qr_proof' => 'nullable|image|max:2048',
+        ]);
+
+        $buyer = Auth::user();
+        $cartIds = session('checkout_items', []);
+        $cartItems = Cart::with('product')
+            ->whereIn('id', $cartIds)
+            ->where('buyer_id', $buyer->id)
+            ->get();
+
+        if ($cartItems->isEmpty()) {
+            return redirect()->route('buyer.cart.index')->with('error', 'Cart is empty.');
+        }
+
+        $totalAmount = 0;
+        $orderIds = [];
+
+        foreach ($cartItems as $item) {
+            $product = $item->product;
+            $order = Order::create([
+                'order_code' => Order::generateStructuredOrderCode($product->user),
+                'buyer_id' => $buyer->id,
+                'product_id' => $product->id,
+                'farmer_id' => $product->farmer_id ?? $product->user_id,
+                'quantity' => $item->quantity,
+                'price' => $product->price,
+                'total_price' => $product->price * $item->quantity,
+                'status' => 'Pending',
+                'payment_status' => 'paid',
+                'buyer_phone' => session('checkout_phone'),
+                'buyer_address' => session('checkout_address'),
+                'buyer_city' => session('checkout_city'),
+                'buyer_region' => session('checkout_region'),
+                'buyer_postal_code' => session('checkout_postal_code'),
+            ]);
+
+            $orderIds[] = $order->id;
+            $totalAmount += $order->total_price;
+
+            $this->notifyUsers($order, $buyer);
+        }
+
+        Cart::whereIn('id', $cartIds)->delete();
+        session()->forget('checkout_items');
+
+        $proofPath = null;
+        if ($request->hasFile('qr_proof')) {
+            $filename = 'proof_' . time() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $request->file('qr_proof')->getClientOriginalName());
+            $proofPath = $request->file('qr_proof')->storeAs('payments', $filename, 'public');
+
+
+
+            // Optional debug log
+            \Log::info('QR proof uploaded to: ' . $proofPath);
+        }
+
+
+        $payment = Payment::create([
+            'intent_id' => 'mock_' . Str::random(10),
+            'method' => $request->payment_method,
+            'amount' => $totalAmount * 100,
+            'status' => 'paid',
+            'buyer_id' => $buyer->id,
+            'order_ids' => json_encode($orderIds),
+            'is_test' => true,
+            'response_payload' => json_encode([
+                'qr_reference' => $request->qr_reference,
+                'qr_name' => $request->qr_name,
+                'qr_mobile' => $request->qr_mobile,
+                'proof_path' => $proofPath,
+            ]),
+        ]);
+
+        Order::whereIn('id', $orderIds)->update(['payment_id' => $payment->id]);
+
+        session(['reference' => 'MOCK_REF_' . Str::random(6)]);
+
+        return redirect()->route('buyer.payment.thankYou');
+    }
+
+    public function showReceipt(Payment $payment)
+    {
+        if ($payment->buyer_id !== Auth::id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        $orders = $payment->orders;
+        return view('buyer.payment.receipt', compact('payment', 'orders'));
+    }
+
+    protected function notifyUsers(Order $order, $buyer)
+    {
+        if ($farmer = User::find($order->farmer_id)) {
+            $farmer->notify(new FarmerOrderPlacedNotification($order));
+        }
+
+        $admins = User::where('role', 'admin')->get();
+        Notification::send($admins, new AdminAlertNotification([
+            'message' => 'Order ' . $order->order_code . ' has been placed by ' . $buyer->name,
+            'icon' => 'bi-cart-check',
+            'link' => route('admin.orders.index', ['highlight_order' => $order->id]),
+            'type' => 'order',
+        ]));
+    }
+
+    public function paymentSuccess()
+    {
+        return redirect()->route('buyer.payment.thankYou');
+    }
+
+    public function paymentFailure()
+    {
+        return view('buyer.payment.failure');
+    }
+
+    public function thankYou()
+    {
+        $reference = session('reference') ?? 'MOCK_REF_' . Str::random(6);
+        return view('buyer.payment.thank-you', compact('reference'));
+    }
+
+    public function review()
+    {
+        $buyNow = session('buy_now');
+        $items = [];
+        $totalAmount = 0;
+
+        if ($buyNow) {
+            $product = Product::withTrashed()->findOrFail($buyNow['product_id']);
+            $items[] = [
+                'product' => $product,
+                'quantity' => $buyNow['quantity'],
+                'total' => $product->price * $buyNow['quantity'],
+            ];
+            $totalAmount = $items[0]['total'];
+        } else {
+            $items = Cart::with(['product' => fn ($q) => $q->withTrashed()])
+                ->where('buyer_id', Auth::id())
+                ->get()
+                ->map(fn ($item) => [
+                    'product' => $item->product,
+                    'quantity' => $item->quantity,
+                    'total' => $item->product->price * $item->quantity,
+                ]);
+
+            $totalAmount = $items->sum('total');
+        }
+
+        return view('buyer.payment.review', compact('items', 'totalAmount', 'buyNow'));
+    }
+
     public function checkoutPreview()
     {
         $cartIds = session('checkout_items', []);
@@ -49,254 +247,5 @@ class PaymentController extends Controller
             'checkout_items' => $displayItems,
             'totalAmount' => $totalAmount,
         ]);
-    }
-
-    // 💳 Process checkout form & redirect to PayMongo
-    public function processForm(Request $request)
-    {
-        session([
-            'checkout_phone' => $request->phone,
-            'checkout_address' => $request->address,
-            'checkout_city' => $request->city,
-            'checkout_region' => $request->region,
-            'checkout_postal_code' => $request->postal_code,
-        ]);
-
-        $request->validate([
-            'contact_email' => 'required|email',
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
-            'address' => 'required|string|max:255',
-            'city' => 'required|string|max:100',
-            'region' => 'required|string|max:100',
-            'postal_code' => 'required|string|max:20',
-            'phone' => 'required|string|max:20',
-            'payment_method' => 'required|in:gcash,paymaya,card',
-        ]);
-
-        $amount = 0;
-        $cartItems = Cart::with(['product' => fn($q) => $q->withTrashed()])
-            ->whereIn('id', session('checkout_items', []))
-            ->where('buyer_id', Auth::id())
-            ->get();
-
-        foreach ($cartItems as $item) {
-            $amount += $item->product->price * $item->quantity;
-        }
-
-        $amount = (int) ($amount * 100);
-
-        $billing = [
-            'name' => $request->first_name . ' ' . $request->last_name,
-            'email' => $request->contact_email,
-            'phone' => $request->phone,
-            'address' => [
-                'line1' => $request->address,
-                'city' => $request->city,
-                'state' => $request->region,
-                'postal_code' => $request->postal_code,
-                'country' => 'PH',
-            ],
-        ];
-
-        $redirectUrl = app(PaymongoService::class)->createRedirectPayment(
-            $amount, $billing, $request->payment_method
-        );
-
-        return redirect()->away($redirectUrl);
-    }
-
-    // ✅ Handle successful PayMongo or mock payment
-    public function paymentSuccess()
-    {
-        $buyer = Auth::user();
-        $intentId = request()->query('payment_intent') ?? 'test_' . Str::random(6);
-        $method = request()->query('method') ?? 'unknown';
-        $responseData = json_encode(request()->all());
-
-        $cartIds = session('checkout_items', []);
-        $cartItems = Cart::with(['product' => fn($q) => $q->withTrashed()])
-            ->whereIn('id', $cartIds)
-            ->where('buyer_id', $buyer->id)
-            ->get();
-
-        if ($cartItems->isEmpty()) {
-            return redirect()->route('buyer.cart.index')->with('error', 'Cart is empty.');
-        }
-
-        $totalAmount = 0;
-        $orderIds = [];
-
-        foreach ($cartItems as $item) {
-            $product = $item->product;
-            $farmer = $product->user;
-
-            $order = Order::create([
-                'order_code' => Order::generateStructuredOrderCode($farmer),
-                'buyer_id' => $buyer->id,
-                'product_id' => $product->id,
-                'farmer_id' => $farmer->id,
-                'quantity' => $item->quantity,
-                'price' => $product->price,
-                'total_price' => $product->price * $item->quantity,
-                'status' => 'Pending',
-                'payment_status' => 'paid',
-                'buyer_phone' => session('checkout_phone'),
-                'buyer_address' => session('checkout_address'),
-                'buyer_city' => session('checkout_city'),
-                'buyer_region' => session('checkout_region'),
-                'buyer_postal_code' => session('checkout_postal_code'),
-            ]);
-
-            $totalAmount += $order->total_price;
-            $orderIds[] = $order->id;
-
-            $this->notifyUsers($order, $buyer);
-        }
-
-        Cart::whereIn('id', $cartIds)->delete();
-        session()->forget('checkout_items');
-
-        Payment::create([
-            'intent_id' => $intentId,
-            'reference_id' => $intentId,
-            'method' => $method,
-            'amount' => $totalAmount * 100,
-            'status' => 'paid',
-            'buyer_id' => $buyer->id,
-            'order_ids' => json_encode($orderIds),
-            'is_test' => false,
-            'response_payload' => $responseData,
-        ]);
-
-        return redirect()->route('buyer.orders.confirmation')->with('success', 'Orders placed successfully!');
-    }
-
-    // 🛠️ Mock Payment Success — updated to support multiple order_ids
-    public function mockSuccess(Request $request)
-    {
-        $request->validate([
-            'contact_email' => 'required|email',
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'phone' => 'required|string',
-            'address' => 'required|string',
-            'city' => 'required|string',
-            'region' => 'required|string',
-            'postal_code' => 'required|string',
-        ]);
-
-        $buyer = Auth::user();
-        $cartItems = Cart::with('product')->where('buyer_id', $buyer->id)->get();
-
-        if ($cartItems->isEmpty()) {
-            return redirect()->route('buyer.cart.index')->with('error', 'Cart is empty.');
-        }
-
-        $totalAmount = 0;
-        $orderIds = [];
-
-        foreach ($cartItems as $item) {
-            $product = $item->product;
-            $totalAmount += $product->price * $item->quantity;
-
-            $order = Order::create([
-                'order_code' => Order::generateStructuredOrderCode($product->user),
-                'buyer_id' => $buyer->id,
-                'product_id' => $product->id,
-                'farmer_id' => $product->farmer_id ?? $product->user_id,
-                'quantity' => $item->quantity,
-                'price' => $product->price,
-                'total_price' => $product->price * $item->quantity,
-                'status' => 'Pending',
-                'payment_status' => 'paid',
-                'buyer_phone' => $request->phone,
-                'buyer_address' => $request->address,
-                'buyer_city' => $request->city,
-                'buyer_region' => $request->region,
-                'buyer_postal_code' => $request->postal_code,
-            ]);
-
-            $orderIds[] = $order->id;
-            $this->notifyUsers($order, $buyer);
-        }
-
-        Cart::where('buyer_id', $buyer->id)->delete();
-
-        Payment::create([
-            'intent_id' => 'mock_' . Str::random(10),
-            'method' => 'mock',
-            'amount' => $totalAmount * 100,
-            'status' => 'paid',
-            'buyer_id' => $buyer->id,
-            'order_ids' => json_encode($orderIds),
-            'is_test' => true,
-            'response_payload' => null,
-        ]);
-
-        session(['reference' => 'MOCK_REF_' . Str::random(6)]);
-        return redirect()->route('buyer.checkout.thankYou');
-    }
-
-    // 📢 Notify farmer and admins
-    protected function notifyUsers(Order $order, $buyer)
-    {
-        if ($farmer = User::find($order->farmer_id)) {
-            $farmer->notify(new FarmerOrderPlacedNotification($order));
-        }
-
-        $admins = User::where('role', 'admin')->get();
-        Notification::send($admins, new AdminAlertNotification([
-            'message' => 'Order ' . $order->order_code . ' has been placed by ' . $buyer->name,
-            'icon' => 'bi-cart-check',
-            'link' => route('admin.orders.index', ['highlight_order' => $order->id]),
-            'type' => 'order',
-        ]));
-    }
-
-    public function thankYou()
-    {
-        $reference = session('reference') ?? 'MOCK_REF_' . Str::random(6);
-        return view('buyer.payment.thank-you', compact('reference'));
-    }
-
-    public function review()
-    {
-        $buyNow = session('buy_now');
-        $items = [];
-        $totalAmount = 0;
-
-        if ($buyNow) {
-            $product = Product::withTrashed()->findOrFail($buyNow['product_id']);
-            $items[] = [
-                'product' => $product,
-                'quantity' => $buyNow['quantity'],
-                'total' => $product->price * $buyNow['quantity'],
-            ];
-            $totalAmount = $items[0]['total'];
-        } else {
-            $items = Cart::with(['product' => fn($q) => $q->withTrashed()])
-                ->where('buyer_id', Auth::id())
-                ->get()
-                ->map(fn($item) => [
-                    'product' => $item->product,
-                    'quantity' => $item->quantity,
-                    'total' => $item->product->price * $item->quantity,
-                ]);
-
-            $totalAmount = $items->sum('total');
-        }
-
-        return view('buyer.payment.review', compact('items', 'totalAmount', 'buyNow'));
-    }
-
-    public function showForm()
-    {
-        return view('buyer.payment.form');
-    }
-
-    public function paymentFailure()
-    {
-        return view('buyer.payment.failure');
     }
 }

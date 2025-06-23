@@ -17,6 +17,7 @@
                     <th>Method</th>
                     <th>Order Code</th>
                     <th>Is Test?</th>
+                    <th>Verified</th> {{-- ✅ Added Column --}}
                     <th>Date</th>
                     <th>View</th>
                 </tr>
@@ -45,6 +46,11 @@
                         <td>
                             <span class="badge bg-{{ $payment->is_test ? 'warning' : 'info' }}">
                                 {{ $payment->is_test ? 'Yes' : 'No' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ $payment->is_verified ? 'primary' : 'danger' }}">
+                                {{ $payment->is_verified ? 'Verified' : 'Unverified' }}
                             </span>
                         </td>
                         <td>
@@ -83,7 +89,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        {{-- 🟩 Verified Button Placeholder (will be injected from show.blade.php) --}}
       </div>
     </div>
   </div>
@@ -105,6 +111,24 @@
       })
       .catch(() => {
         content.innerHTML = '<p class="text-danger">Failed to load payment details.</p>';
+      });
+  }
+
+  function markAsVerified(paymentId) {
+    if (!confirm('Are you sure you want to mark this payment as verified?')) return;
+
+    fetch(`/admin/payments/${paymentId}/verify`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+        'Accept': 'application/json'
+      }
+    }).then(res => res.json())
+      .then(data => {
+        if (data.status === 'ok') {
+          alert('Marked as verified!');
+          location.reload();
+        }
       });
   }
 </script>
