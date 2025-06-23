@@ -27,6 +27,16 @@
 
   <div class="card">
     <div class="card-body p-0">
+      <div class="d-flex justify-content-end pt-3 gap-2 px-3 mb-2">
+        <a href="{{ route('admin.orders.export.pdf') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-file-earmark-pdf"></i> Export PDF
+        </a>
+        <a href="{{ route('admin.export.sales') }}" class="btn btn-outline-success btn-sm">
+          <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+        </a>
+      </div>
+
+
       <div class="table-responsive rounded-top">
         <table class="table table-borderless align-middle text-sm admin-order-table table-rounded">
           <thead class="table-light">
@@ -61,30 +71,25 @@
                   <span class="status {{ strtolower(str_replace([' ', '/'], ['-', '-'], $order->status)) }}">
                     {{ strtoupper($order->status) }}
                   </span>
-
                   @if ($order->returnRequest)
                     <br>
                     <span class="badge bg-warning text-dark mt-1">RETURN REQUESTED</span>
                   @endif
                 </td>
-
-<td class="d-flex gap-2">
-  <button class="btn btn-outline-primary btn-sm"
-          data-bs-toggle="modal"
-          data-bs-target="#orderDetailsModal"
-          onclick="loadOrderDetails({{ $order->id }})">
-    <i class="bi bi-eye"></i>
-  </button>
-
-  <button class="btn btn-outline-secondary btn-sm"
-          data-bs-toggle="modal"
-          data-bs-target="#orderActionModal"
-          onclick="openOrderActionModal({{ $order->id }}, '{{ $order->status }}')">
-    <i class="bi bi-pencil-square"></i>
-  </button>
-</td>
-
-
+                <td class="d-flex gap-2">
+                  <button class="btn btn-outline-primary btn-sm"
+                          data-bs-toggle="modal"
+                          data-bs-target="#orderDetailsModal"
+                          onclick="loadOrderDetails({{ $order->id }})">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="btn btn-outline-secondary btn-sm"
+                          data-bs-toggle="modal"
+                          data-bs-target="#orderActionModal"
+                          onclick="openOrderActionModal({{ $order->id }}, '{{ $order->status }}')">
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+                </td>
                 <td>{{ $order->created_at->format('d M Y, h:i A') }}</td>
               </tr>
             @empty
@@ -101,6 +106,7 @@
       </div>
     </div>
   </div>
+
 </div>
 @endsection
 

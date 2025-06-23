@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Exports\OrdersExport;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class AdminOrderController extends Controller
 {
@@ -53,6 +57,18 @@ class AdminOrderController extends Controller
     {
         $order->load(['buyer', 'product.farmer']); // Ensure all relations are loaded
         return view('admin.orders.partials.details', compact('order'));
+    }
+
+    public function exportCsv()
+    {
+        return Excel::download(new OrdersExport, 'orders.csv');
+    }
+
+    public function exportPdf()
+    {
+        $orders = Order::with(['product.farmer', 'buyer'])->latest()->get();
+        $pdf = Pdf::loadView('admin.orders.pdf', compact('orders'));
+        return $pdf->download('orders.pdf');
     }
 
 

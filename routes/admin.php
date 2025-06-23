@@ -110,9 +110,12 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     // 🛒 Orders
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    // ⬇️ Add this route for PDF export
+    Route::get('/orders/export/pdf', [AdminOrderController::class, 'exportPdf'])->name('orders.export.pdf');
     Route::get('/export-sales', [AdminDashboardController::class, 'exportSales'])->name('export.sales');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.updateStatus');
+
 
     // 👥 Users
     Route::resource('users', AdminUserController::class)->except(['show'])->names('users');
