@@ -59,7 +59,7 @@ class MessageController extends Controller
             'message' => $request->message,
             'is_read' => false,
         ]);
-
+$conversation->touch();
         return response()->json($message, 201);
     }
 }

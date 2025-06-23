@@ -37,12 +37,12 @@ class AdminAuthenticatedSessionController extends Controller
         }
 
 
-        if ($user->status !== 'active') {
-            Auth::guard('admin')->logout();
-            return back()->withErrors([
-                'email' => 'Your admin account is inactive. Please contact support to reactivate.',
-            ]);
-        }
+//        if ($user->status !== 'active') {
+  //          Auth::guard('admin')->logout();
+    //        return back()->withErrors([
+      //          'email' => 'Your admin account is inactive. Please contact support to reactivate.',
+        //    ]);
+        //}
 
         if (!$user || $user->role !== 'admin') {
             Auth::guard('admin')->logout();

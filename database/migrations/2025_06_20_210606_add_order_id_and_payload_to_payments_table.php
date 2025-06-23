@@ -6,25 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-public function up()
-{
-    Schema::table('payments', function (Blueprint $table) {
-        $table->unsignedBigInteger('order_id')->nullable()->after('buyer_id');
-        $table->json('response_payload')->nullable()->after('status');
-        $table->boolean('is_test')->default(false)->after('response_payload');
-    });
-}
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function up()
     {
         Schema::table('payments', function (Blueprint $table) {
-            //
+            // Skip order_id since it's already removed manually
+            if (!Schema::hasColumn('payments', 'response_payload')) {
+                $table->json('response_payload')->nullable()->after('status');
+            }
+        });
+    }
+
+    public function down()
+    {
+        Schema::table('payments', function (Blueprint $table) {
+            if (Schema::hasColumn('payments', 'response_payload')) {
+                $table->dropColumn('response_payload');
+            }
         });
     }
 };

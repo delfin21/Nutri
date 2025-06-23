@@ -1,3 +1,4 @@
+
 <?php
 
 use Illuminate\Support\Facades\Route;
@@ -23,13 +24,14 @@ use App\Http\Controllers\API\{
     ProductTemplateController,
     ReturnRequestController
 };
-
+use App\Http\Controllers\Farmer\FarmerVerificationController;
 use App\Http\Controllers\Buyer\BuyerNotificationController;
 use App\Http\Controllers\Farmer\FarmerNotificationController;
 use App\Http\Controllers\Farmer\FarmerReturnController;
 use App\Http\Controllers\PaymentController;
 use App\Models\User;
 use App\Services\FirebaseNotificationService;
+use App\Http\Controllers\API\FarmerVerificationApiController;
 
 // Public Auth Routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -55,6 +57,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/farmer/orders', [FarmerOrderController::class, 'index']);
     Route::put('/farmer/orders/{id}', [FarmerOrderController::class, 'update']);
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/farmer/verify', [FarmerVerificationController::class, 'verify']);
+    Route::get('/farmer/my-verification', [FarmerVerificationApiController::class, 'myRequest']);
+    Route::get('/admin/verifications', [FarmerVerificationApiController::class, 'index']);
+    Route::patch('/admin/verifications/{id}/approve', [FarmerVerificationApiController::class, 'approve']);
+    Route::patch('/admin/verifications/{id}/reject', [FarmerVerificationApiController::class, 'reject']);
+});
     // Buyer Routes
     Route::post('/orders', [BuyerCheckoutController::class, 'checkout']);
     Route::get('/buyer/purchases', [BuyerPurchaseController::class, 'index']);

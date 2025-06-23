@@ -14,21 +14,16 @@ class ProductController extends Controller
     /**
      * Get all products (for mobile/web)
      */
-    public function index()
+public function index()
 {
-    $imageBaseUrl = 'http://10.0.2.2:8000'; // 👈 Must be accessible from Android emulator
+    $imageBaseUrl = config('app.url'); // Automatically uses https://nutriapp.shop
 
     $products = Product::with('farmer')->get()->map(function ($product) use ($imageBaseUrl) {
         $imagePath = $product->image;
 
-        // Final image URL logic
-        if ($imagePath && str_starts_with($imagePath, 'http')) {
-            $finalImage = $imagePath;
-        } else if ($imagePath) {
-            $finalImage = $imageBaseUrl . '/storage/' . $imagePath;
-        } else {
-            $finalImage = $imageBaseUrl . '/img/default-product.jpg';
-        }
+        $finalImage = $imagePath
+            ? $imageBaseUrl . '/storage/' . ltrim($imagePath, '/')
+            : $imageBaseUrl . '/img/default-product.jpg';
 
         return [
             'id' => $product->id,
@@ -37,7 +32,7 @@ class ProductController extends Controller
             'stock' => $product->stock,
             'rating' => $product->rating ?? 0,
             'category' => $product->category,
-            'image' => $finalImage, // ✅ this will now work in Flutter
+            'image' => $finalImage,
             'farmer_name' => optional($product->farmer)->business_name ?? 'Unknown',
             'created_at' => $product->created_at,
             'updated_at' => $product->updated_at,
@@ -46,7 +41,6 @@ class ProductController extends Controller
 
     return response()->json(['products' => $products]);
 }
-
 
     /**
      * Show a product by ID with relationships

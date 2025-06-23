@@ -32,4 +32,27 @@ class FarmerVerificationController extends Controller
 
         return redirect()->back()->with('success', 'Document submitted. Please wait for admin approval.');
     }
+public function verify(Request $request)
+    {
+        $request->validate([
+            'document' => 'required|image|max:2048',
+        ]);
+
+        $user = $request->user();
+
+        // Save document to storage
+        $path = $request->file('document')->store('verification_docs', 'public');
+
+        // Save to FarmerDocument model (shared with web)
+        FarmerDocument::create([
+            'farmer_id' => $user->id,
+            'document_path' => $path,
+            'status' => 'pending',
+            'admin_note' => null,
+        ]);
+
+        return response()->json(['message' => 'Document submitted for verification']);
+    }
 }
+
+

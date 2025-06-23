@@ -35,11 +35,11 @@ class AdminRegisteredUserController extends Controller
         ]);
 
         // Send custom admin verification notification
-        $user->notify(new AdminVerifyEmail());
+//        $user->notify(new AdminVerifyEmail());
 
         Auth::guard('admin')->login($user);
 
-        return redirect()->route('admin.verification.notice'); // ✅ Redirect to the verify page
+	return redirect()->route('admin.login')->with('success', 'Account registered successfully.');
     }
 
 }

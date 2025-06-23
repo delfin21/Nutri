@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+  <link rel="stylesheet" href="{{ secure_asset('css/style.css') }}">
 </head>
 <body>
   <header class="d-flex justify-content-between align-items-center px-4 py-3 bg-light shadow-sm">
@@ -67,7 +67,7 @@
       </a>
     </div>
     <div class="hero-image">
-      <img src="{{ asset('img/hero.png') }}" alt="Hero Farmer">
+      <img src="{{ secure_asset('img/hero.png') }}" alt="Hero Farmer">
     </div>
   </section>
 
@@ -79,7 +79,7 @@
       @forelse ($bestSelling as $product)
         <a href="{{ route('product.show', $product->id) }}" class="text-decoration-none text-dark">
           <div class="card shadow-sm" style="width: 200px;">
-            <img src="{{ asset('storage/' . $product->image) }}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="{{ $product->name }}">
+            <img src="{{ secure_asset('storage/' . $product->image) }}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="{{ $product->name }}">
             <div class="card-body p-2">
               <h6 class="mb-1">{{ ucfirst($product->name) }}</h6>
               <small class="text-success fw-semibold">₱{{ number_format($product->price, 2) }}</small>
@@ -95,7 +95,7 @@
   <!-- ABOUT US -->
   <section id="about" class="py-5" style="background: #e6ffe6;">
     <div class="container d-flex align-items-center justify-content-center">
-      <img src="{{ asset('img/about.png') }}" alt="About" style="max-width: 300px; margin-right: 40px;">
+      <img src="{{ secure_asset('img/about.png') }}" alt="About" style="max-width: 300px; margin-right: 40px;">
       <div>
         <h2>ABOUT US</h2>
         <p>NutriApp connects farmers to markets, boosting sales, efficiency, and sustainability through direct sales, analytics, and secure transactions.</p>
@@ -185,7 +185,7 @@
   </footer>
 
   <!-- Scripts -->
-  <script src="{{ asset('js/script.js') }}"></script>
+  <script src="{{ secure_asset('js/script.js') }}"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

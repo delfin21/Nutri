@@ -27,12 +27,23 @@
                 <tbody>
                     @forelse ($documents as $doc)
                         <tr>
-                            <td>{{ $doc->farmer->name }}<br><small>{{ $doc->farmer->email }}</small></td>
+                            <td>
+                                @if ($doc->farmer)
+                                    {{ $doc->farmer->name }}<br>
+                                    <small>{{ $doc->farmer->email }}</small>
+                                    <br>
+                                    <span class="badge bg-info text-dark">{{ ucfirst($doc->source ?? 'unknown') }}</span>
+                                @else
+                                    <em class="text-muted">Unknown User</em>
+                                @endif
+                            </td>
+
                             <td>
                                 <a href="{{ asset('storage/' . $doc->document_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                     View Document
                                 </a>
                             </td>
+
                             <td>
                                 @php
                                     $badgeClass = match($doc->status) {
@@ -48,10 +59,22 @@
                                     <br><small class="text-danger fst-italic">Note: {{ $doc->admin_note }}</small>
                                 @endif
                             </td>
+
                             <td>{{ $doc->created_at->format('M d, Y') }}</td>
+
                             <td>
                                 @if ($doc->status === 'pending')
-                                    <form action="{{ route('admin.verifications.approve', $doc->id) }}" method="POST" class="d-inline">
+                                    @php
+                                        $approveRoute = $doc->source === 'web'
+                                            ? route('admin.verifications.approve.web', $doc->id)
+                                            : route('admin.verifications.approve.mobile', $doc->id);
+
+                                        $rejectRoute = $doc->source === 'web'
+                                            ? route('admin.verifications.reject.web', $doc->id)
+                                            : route('admin.verifications.reject.mobile', $doc->id);
+                                    @endphp
+
+                                    <form action="{{ $approveRoute }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('PATCH')
                                         <button class="btn btn-sm btn-success">Approve</button>
@@ -77,29 +100,35 @@
 </div>
 @endsection
 
-{{-- ✅ Move modals outside the loop --}}
+{{-- ✅ Reject Modals --}}
 @foreach ($documents as $doc)
     @if ($doc->status === 'pending')
-    <div class="modal fade" id="rejectModal{{ $doc->id }}" tabindex="-1" aria-labelledby="rejectModalLabel{{ $doc->id }}" aria-hidden="true">
-        <div class="modal-dialog"> {{-- Wider and centered --}}
-            <form method="POST" action="{{ route('admin.verifications.reject', $doc->id) }}">
-                @csrf
-                @method('PATCH')
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="rejectModalLabel{{ $doc->id }}">Reject Verification</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        @php
+            $rejectRoute = $doc->source === 'web'
+                ? route('admin.verifications.reject.web', $doc->id)
+                : route('admin.verifications.reject.mobile', $doc->id);
+        @endphp
+
+        <div class="modal fade" id="rejectModal{{ $doc->id }}" tabindex="-1" aria-labelledby="rejectModalLabel{{ $doc->id }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <form method="POST" action="{{ $rejectRoute }}">
+                    @csrf
+                    @method('PATCH')
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="rejectModalLabel{{ $doc->id }}">Reject Verification</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <label for="admin_note{{ $doc->id }}" class="form-label">Rejection Reason</label>
+                            <textarea name="admin_note" class="form-control" id="admin_note{{ $doc->id }}" rows="5" required></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-danger w-100">Confirm Reject</button>
+                        </div>
                     </div>
-                    <div class="modal-body">
-                        <label for="admin_note{{ $doc->id }}" class="form-label">Rejection Reason</label>
-                        <textarea name="admin_note" class="form-control" id="admin_note{{ $doc->id }}" rows="5" style="min-height: 120px;" required></textarea>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-danger w-100">Confirm Reject</button>
-                    </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
-    </div>
     @endif
 @endforeach

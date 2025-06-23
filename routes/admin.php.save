@@ -6,8 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
-use App\Http\Controllers\Admin\AdminPaymentController;
-
 
 use App\Http\Controllers\Admin\Auth\AdminAuthenticatedSessionController;
 use App\Http\Controllers\Admin\Auth\AdminRegisteredUserController;
@@ -48,42 +46,42 @@ Route::prefix('admin')->group(function () {
     Route::post('/reset-password', [AdminResetPasswordController::class, 'reset'])->name('admin.password.update');
 
     // 🔒 Admin Email Verification Notice Page
-    // Route::get('/verify-email', function () {
-    //     return view('admin.auth.verify-email');
-    // })->middleware('auth:admin')->name('admin.verification.notice');
+    Route::get('/verify-email', function () {
+        return view('admin.auth.verify-email');
+    })->middleware('auth:admin')->name('admin.verification.notice');
 
-    // // ✅ Admin Email Verification Handler
-    // Route::get('/verify-email/{id}/{hash}', function (Request $request, $id, $hash) {
-    //     $admin = User::findOrFail($id);
+    // ✅ Admin Email Verification Handler
+    Route::get('/verify-email/{id}/{hash}', function (Request $request, $id, $hash) {
+        $admin = User::findOrFail($id);
 
-    //     if ($admin->role !== 'admin') {
-    //         abort(403, 'Unauthorized.');
-    //     }
+        if ($admin->role !== 'admin') {
+            abort(403, 'Unauthorized.');
+        }
 
-    //     if (! hash_equals((string) $hash, sha1($admin->getEmailForVerification()))) {
-    //         abort(403, 'Invalid hash.');
-    //     }
+        if (! hash_equals((string) $hash, sha1($admin->getEmailForVerification()))) {
+            abort(403, 'Invalid hash.');
+        }
 
-    //     if (! Auth::guard('admin')->check()) {
-    //         Auth::guard('admin')->login($admin);
-    //     }
+        if (! Auth::guard('admin')->check()) {
+            Auth::guard('admin')->login($admin);
+        }
 
-    //     if ($admin->hasVerifiedEmail()) {
-    //         return redirect()->route('admin.dashboard')->with('status', 'Already verified.');
-    //     }
+        if ($admin->hasVerifiedEmail()) {
+            return redirect()->route('admin.dashboard')->with('status', 'Already verified.');
+        }
 
-    //     $admin->markEmailAsVerified();
-    //     event(new Verified($admin));
+        $admin->markEmailAsVerified();
+        event(new Verified($admin));
 
-    //     return redirect()->route('admin.dashboard')->with('status', 'Email verified!');
-    // })->middleware(['signed'])->name('admin.verification.verify');
+        return redirect()->route('admin.dashboard')->with('status', 'Email verified!');
+    })->middleware(['signed'])->name('admin.verification.verify');
 
-    // // 🔁 Resend Email Verification
-    // Route::post('/email/verification-notification', function (Request $request) {
-    // $request->user('admin')->notify(new AdminVerifyEmail());
-    // return back()->with('status', 'Verification link sent!');
-    // })->middleware(['auth:admin', 'throttle:6,1'])->name('admin.verification.send');
-    
+    // 🔁 Resend Email Verification
+    Route::post('/email/verification-notification', function (Request $request) {
+    $request->user('admin')->notify(new AdminVerifyEmail());
+    return back()->with('status', 'Verification link sent!');
+    })->middleware(['auth:admin', 'throttle:6,1'])->name('admin.verification.send');
+
 });
 
 // ========================================================================
@@ -97,10 +95,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     // 📦 Products
     Route::resource('products', AdminProductController::class);
     Route::get('/products-export', [AdminProductController::class, 'export'])->name('products.export');
-
-    // Payments
-    Route::get('/payments', [AdminPaymentController::class, 'index'])->name('payments.index');
-    Route::get('/payments/{id}', [AdminPaymentController::class, 'show'])->name('payments.show');
 
     // ✅ Product Approval
     Route::patch('/products/{id}/approve', [AdminProductController::class, 'approve'])->name('products.approve');
@@ -123,13 +117,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/users-export', [AdminUserController::class, 'export'])->name('users.export');
 
     // 📄 Farmer Verification
- Route::get('/verifications', [FarmerVerificationReviewController::class, 'index'])->name('verifications.index');
+    Route::get('/verifications', [FarmerVerificationReviewController::class, 'index'])->name('verifications.index');
+    Route::patch('/verifications/{id}/approve', [FarmerVerificationReviewController::class, 'approve'])->name('verifications.approve');
+    Route::patch('/verifications/{id}/reject', [FarmerVerificationReviewController::class, 'reject'])->name('verifications.reject');
 
-    Route::patch('/verifications/web/{id}/approve', [FarmerVerificationReviewController::class, 'approveWeb'])->name('verifications.approve.web');
-    Route::patch('/verifications/web/{id}/reject', [FarmerVerificationReviewController::class, 'rejectWeb'])->name('verifications.reject.web');
-
-    Route::patch('/verifications/mobile/{id}/approve', [FarmerVerificationReviewController::class, 'approveMobile'])->name('verifications.approve.mobile');
-    Route::patch('/verifications/mobile/{id}/reject', [FarmerVerificationReviewController::class, 'rejectMobile'])->name('verifications.reject.mobile');
     // 🌟 Reviews & Ratings
     Route::get('/reviews', [AdminReviewController::class, 'index'])->name('reviews.index');
 
@@ -165,6 +156,4 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/returns/{id}', [AdminReturnRequestController::class, 'show'])->name('returns.show');
     Route::post('/returns/{id}/approve', [AdminReturnRequestController::class, 'approve'])->name('returns.approve');
     Route::post('/returns/{id}/reject', [AdminReturnRequestController::class, 'reject'])->name('returns.reject');
-    Route::post('/returns/{id}/replacement-sent', [AdminReturnRequestController::class, 'markReplacementSent'])->name('returns.markReplacementSent');
-
 });
