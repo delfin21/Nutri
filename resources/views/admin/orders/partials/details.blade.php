@@ -7,7 +7,18 @@
     <p><strong>Email:</strong> {{ $order->buyer->email ?? '—' }}</p>
   </div>
   <div class="col-md-6">
-    <p><strong>Delivery Address:</strong> {{ $order->buyer->address ?? '—' }}</p>
+  <p><strong>Delivery Address:</strong>
+    @php
+      $parts = array_filter([
+        $order->buyer_address,
+        $order->buyer_city,
+        $order->buyer_region,
+        $order->buyer_postal_code
+      ]);
+    @endphp
+
+    {{ count($parts) ? implode(', ', $parts) : '—' }}
+  </p>
     <p><strong>Status:</strong> {{ $order->status }}</p>
     <p><strong>Quantity:</strong> {{ $order->quantity }}</p>
     <p><strong>Total Price:</strong> ₱{{ number_format($order->total_price, 2) }}</p>

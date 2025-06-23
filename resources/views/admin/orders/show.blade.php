@@ -13,7 +13,19 @@
             <p><strong>Farmer:</strong> {{ $order->product->farmer->name ?? 'Unknown' }}</p>
             <p><strong>Buyer:</strong> {{ $order->buyer->name ?? 'Unknown' }}</p>
             <p><strong>Email:</strong> {{ $order->buyer->email ?? '—' }}</p>
-            <p><strong>Delivery Address:</strong> {{ $order->buyer->address ?? '—' }}</p>
+            <p><strong>Delivery Address:</strong>
+            @php
+                $parts = array_filter([
+                $order->buyer_address,
+                $order->buyer_city,
+                $order->buyer_region,
+                $order->buyer_postal_code
+                ]);
+            @endphp
+
+            {{ count($parts) ? implode(', ', $parts) : '—' }}
+            </p>
+
             <p><strong>Status:</strong> 
                 <span class="badge bg-secondary">{{ $order->status }}</span>
             </p>
