@@ -66,17 +66,23 @@ class UserProfileController extends Controller
                         ->get();
         }
 
-        if ($tab === 'receipt' && $request->has('payment_id')) {
-            $payment = \App\Models\Payment::findOrFail($request->payment_id);
-            if ($payment->buyer_id !== $user->id) {
-                abort(403);
+        if ($tab === 'receipts') {
+            $payments = \App\Models\Payment::where('buyer_id', $user->id)
+                        ->where('is_verified', true)
+                        ->latest()
+                        ->get();
+
+            // 👉 Load selected payment if payment_id exists
+            if ($request->has('payment_id')) {
+                $payment = $payments->firstWhere('id', $request->payment_id);
+                if ($payment) {
+                    $orders = $payment->orders;
+                }
             }
-            $orders = $payment->orders;
         }
 
-        if ($tab === 'receipts') {
-            $payments = \App\Models\Payment::where('buyer_id', $user->id)->latest()->get();
-        }
+
+
 
         return view('buyer.profile', compact('user', 'tab', 'payment', 'orders', 'returns', 'payments'));
     }

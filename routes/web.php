@@ -165,6 +165,7 @@ Route::prefix('buyer')->name('buyer.')->middleware(['auth'])->group(function () 
     Route::post('/profile/password', [UserProfileController::class, 'updatePassword'])->name('profile.updatePassword');
     Route::get('/profile/address', [BuyerAddressController::class, 'edit'])->name('profile.address');
     Route::post('/profile/address', [BuyerAddressController::class, 'update'])->name('profile.updateAddress');
+    Route::get('/buyer/profile', [UserProfileController::class, 'show'])->name('profile.show');
 
 
     // 👥 Following
