@@ -13,6 +13,7 @@ class Payment extends Model
         'amount',
         'status',
         'buyer_id',
+        'farmer_id',
         'order_ids',
         'is_test',
         'response_payload',
@@ -28,7 +29,10 @@ class Payment extends Model
     {
         return $this->belongsTo(User::class, 'buyer_id');
     }
-
+    public function farmer()
+    {
+        return $this->belongsTo(User::class, 'farmer_id');
+    }
     public function getOrdersAttribute()
     {
         $orderIds = json_decode($this->order_ids, true) ?: [];

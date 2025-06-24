@@ -34,6 +34,11 @@
             </a>
         </li>
         <li>
+            <a href="{{ route('admin.payouts.index') }}" class="nav-link {{ request()->routeIs('admin.payouts.*') ? 'active' : 'text-dark' }}">
+                <i class="bi bi-cash-coin me-2"></i> Payouts
+            </a>
+        </li>
+        <li>
             <a href="{{ route('admin.returns.index') }}" class="nav-link {{ request()->routeIs('admin.returns.*') ? 'active' : 'text-dark' }}">
                 <i class="bi bi-arrow-counterclockwise me-2"></i> Return Requests
             </a>

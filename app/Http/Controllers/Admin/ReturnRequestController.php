@@ -27,7 +27,8 @@ class ReturnRequestController extends Controller
             });
         }
 
-        $requests = $query->latest()->get();
+        $requests = $query->latest()->paginate(10)->withQueryString();
+
 
         return view('admin.returns.index', compact('requests'));
     }

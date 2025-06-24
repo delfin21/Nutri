@@ -8,18 +8,23 @@ use App\Models\User;
 use App\Models\FarmerDocument;
 use App\Models\FarmerVerificationRequest;
 use App\Notifications\FarmerVerificationStatusNotification;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class FarmerVerificationReviewController extends Controller
 {
-    public function index()
+        public function index(Request $request)
     {
+        $perPage = 15;
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+
         // Web-uploaded documents
         $webDocs = FarmerDocument::with('farmer')
             ->select('id', 'farmer_id as user_id', 'document_path', 'status', 'created_at', 'updated_at')
             ->get()
             ->map(function ($doc) {
                 $doc->source = 'web';
-                $doc->farmer = $doc->farmer ?? User::find($doc->user_id); // fallback
+                $doc->farmer = $doc->farmer ?? User::find($doc->user_id);
                 return $doc;
             });
 
@@ -29,15 +34,24 @@ class FarmerVerificationReviewController extends Controller
             ->get()
             ->map(function ($doc) {
                 $doc->source = 'mobile';
-                $doc->farmer = $doc->farmer ?? User::find($doc->user_id); // fallback
+                $doc->farmer = $doc->farmer ?? User::find($doc->user_id);
                 return $doc;
             });
 
-        // Merge, sort, and return
-        $documents = $webDocs->merge($mobileDocs)->sortByDesc('created_at');
+        // Merge & sort
+        $merged = $webDocs->merge($mobileDocs)->sortByDesc('created_at')->values();
+
+        // Manual pagination
+        $paginated = new LengthAwarePaginator(
+            $merged->forPage($currentPage, $perPage),
+            $merged->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         return view('admin.verifications.index', [
-            'documents' => $documents,
+            'documents' => $paginated,
         ]);
     }
 

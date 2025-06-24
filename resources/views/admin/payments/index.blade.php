@@ -26,7 +26,6 @@
               <th>Status</th>
               <th>Method</th>
               <th>Order Code</th>
-              <th>Is Test?</th>
               <th>Verified</th>
               <th>Date</th>
               <th>View</th>
@@ -52,11 +51,6 @@
                   @else
                     <span class="text-muted">—</span>
                   @endif
-                </td>
-                <td>
-                  <span class="badge rounded-pill bg-{{ $payment->is_test ? 'warning text-dark' : 'info' }}">
-                    {{ $payment->is_test ? 'Yes' : 'No' }}
-                  </span>
                 </td>
                 <td>
                   <span class="badge rounded-pill bg-{{ $payment->is_verified ? 'primary' : 'danger' }}">

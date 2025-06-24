@@ -30,6 +30,8 @@ use App\Http\Controllers\Farmer\FarmerVerificationController;
 use App\Http\Controllers\Buyer\ReturnRequestController as BuyerReturnRequestController;
 use App\Http\Controllers\Farmer\FarmerReturnController;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Farmer\FarmerPayoutController;
+
 
 
 // 🌐 Public Pages
@@ -86,6 +88,11 @@ Route::prefix('farmer')->name('farmer.')->middleware(['auth'])->group(function (
 
     Route::get('/notifications', [FarmerNotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/mark-all', [FarmerNotificationController::class, 'markAll'])->name('notifications.markAll');
+
+    // 💸 Payouts / Earnings
+    Route::get('/payouts', [FarmerPayoutController::class, 'index'])->name('payouts.index');
+    Route::post('/payouts/store', [FarmerPayoutController::class, 'store'])->name('payouts.store');
+
 
     // 🧾 Return Requests (Rebuttal)
     Route::get('/returns', [FarmerReturnController::class, 'index'])->name('returns.index');
@@ -165,8 +172,7 @@ Route::prefix('buyer')->name('buyer.')->middleware(['auth'])->group(function () 
     Route::post('/profile/password', [UserProfileController::class, 'updatePassword'])->name('profile.updatePassword');
     Route::get('/profile/address', [BuyerAddressController::class, 'edit'])->name('profile.address');
     Route::post('/profile/address', [BuyerAddressController::class, 'update'])->name('profile.updateAddress');
-    Route::get('/buyer/profile', [UserProfileController::class, 'show'])->name('profile.show');
-
+    
 
     // 👥 Following
     Route::post('/follow/{farmerId}', [FollowController::class, 'follow'])->name('follow');

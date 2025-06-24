@@ -95,6 +95,10 @@
                     @endforelse
                 </tbody>
             </table>
+            <div class="mt-3 d-flex justify-content-center">
+                {{ $documents->links('pagination::bootstrap-5') }}
+            </div>
+
         </div>
     </div>
 </div>

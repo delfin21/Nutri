@@ -25,6 +25,8 @@ use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\FarmerVerificationReviewController;
 use App\Http\Controllers\Admin\ReturnRequestController as AdminReturnRequestController;
 use App\Notifications\AdminVerifyEmail;
+use App\Http\Controllers\Admin\AdminPayoutController;
+
 
 
 // ========================================================================
@@ -105,7 +107,9 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     // ⬇️ Add this route for Payment PDF and CSV export
     Route::get('/payments/export/pdf', [AdminPaymentController::class, 'exportPdf'])->name('payments.export.pdf');
     Route::get('/payments/export/csv', [AdminPaymentController::class, 'exportCsv'])->name('payments.export.csv');
-
+    // Payouts
+    Route::get('/payouts', [AdminPayoutController::class, 'index'])->name('payouts.index');
+    Route::post('/payouts/{id}/release', [AdminPayoutController::class, 'release'])->name('payouts.release');
 
     // ✅ Product Approval
     Route::patch('/products/{id}/approve', [AdminProductController::class, 'approve'])->name('products.approve');

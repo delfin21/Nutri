@@ -74,26 +74,53 @@ if ($request->hasFile('profile_photo')) {
         return view('farmer.profile-address');
     }
 
-    public function updatePayout(Request $request)
+public function updatePayout(Request $request)
 {
-    $request->validate([
-        'payout_method' => 'required|string|max:50',
-        'payout_account' => 'required|string|max:100',
-        'payout_method_secondary' => 'nullable|string|max:50',
-        'payout_account_secondary' => 'nullable|string|max:100',
+    $user = Auth::user();
+
+    $validated = $request->validate([
+        'payout_method' => 'required|in:GCash,Bank,Maya',
+        // GCash / Maya fields
+        'payout_account' => 'required_if:payout_method,GCash,Maya|nullable|digits:11',
+        'payout_name' => 'required_if:payout_method,GCash,Maya|nullable|string|max:255',
+
+        // Bank fields
+        'payout_bank' => 'required_if:payout_method,Bank|nullable|string|max:255',
+        'payout_bank_account' => 'required_if:payout_method,Bank|nullable|string|max:50',
+        'payout_bank_name' => 'required_if:payout_method,Bank|nullable|string|max:255',
+
+        // Secondary optional
+        'payout_method_secondary' => 'nullable|in:GCash,Bank,Maya',
+        'payout_account_secondary' => 'nullable|string|max:50',
+        'payout_name_secondary' => 'nullable|string|max:255',
+        'secondary_bank_name' => 'nullable|string|max:255',
+        'secondary_bank_account' => 'nullable|string|max:50',
+        'secondary_bank_account_name' => 'nullable|string|max:255',
     ]);
 
-    $farmer = Auth::user();
-
-    $farmer->update([
+    $user->update([
         'payout_method' => $request->payout_method,
-        'payout_account' => $request->payout_account,
-        'payout_method_secondary' => $request->payout_method_secondary,
-        'payout_account_secondary' => $request->payout_account_secondary,
-    ]);
+        'payout_name' => $request->payout_method === 'Bank' ? $request->payout_bank_name : $request->payout_name,
+        'payout_account' => $request->payout_method === 'Bank' ? $request->payout_bank_account : $request->payout_account,
+        'payout_bank' => $request->payout_bank,
 
-    return back()->with('success', 'Payout details updated.');
+        'payout_method_secondary' => $request->payout_method_secondary,
+        'payout_account_secondary' => $request->payout_method_secondary === 'Bank'
+            ? $request->secondary_bank_account
+            : $request->payout_account_secondary,
+        'payout_name_secondary' => $request->payout_method_secondary === 'Bank'
+            ? $request->secondary_bank_account_name
+            : $request->payout_name_secondary,
+
+        'secondary_bank_name' => $request->secondary_bank_name,
+        
+    ]);
+    \Log::info('[PAYOUT DEBUG]', $request->all());
+
+    return back()->with('success', 'Payout settings updated.');
 }
+
+
 
     public function updateAddress(Request $request)
 {
