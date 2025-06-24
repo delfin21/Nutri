@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Exports\TransactionExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AdminPaymentController extends Controller
 {
@@ -24,6 +27,17 @@ class AdminPaymentController extends Controller
         return response()->json(['status' => 'ok']);
     }
 
+    public function exportPdf()
+{
+    $payments = Payment::with('buyer', 'orders')->latest()->get();
+    $pdf = Pdf::loadView('admin.payments.pdf', compact('payments'));
+    return $pdf->download('transaction.pdf');
+}
+
+public function exportCsv()
+{
+    return Excel::download(new TransactionExport, 'transaction.csv');
+}
 
 }
 

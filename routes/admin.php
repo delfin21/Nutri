@@ -102,6 +102,9 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/payments/{id}', [AdminPaymentController::class, 'show'])->name('payments.show');
     Route::get('/receipt/{payment}', [AdminPaymentController::class, 'showReceipt'])->name('payments.receipt');
     Route::post('/payments/{payment}/verify', [AdminPaymentController::class, 'markAsVerified'])->name('payments.verify');
+    // ⬇️ Add this route for Payment PDF and CSV export
+    Route::get('/payments/export/pdf', [AdminPaymentController::class, 'exportPdf'])->name('payments.export.pdf');
+    Route::get('/payments/export/csv', [AdminPaymentController::class, 'exportCsv'])->name('payments.export.csv');
 
 
     // ✅ Product Approval
