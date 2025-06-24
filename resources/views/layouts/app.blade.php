@@ -10,18 +10,15 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0..1,14..32,100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
     <!-- Bootstrap & Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
-    <!-- Vite -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ secure_asset('css/custom.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
     @livewireStyles
 </head>
 
@@ -60,20 +57,29 @@
             $messageRoute = $role === 'buyer' ? route('buyer.messages.inbox') : route('farmer.messages.inbox');
         @endphp
 
-        @if ($role === 'buyer')
         <nav class="bg-success bg-opacity-25 shadow-sm py-2">
             <div class="container d-flex justify-content-between align-items-center">
-                <div class="fw-bold text-success fs-4">NUTRI APP</div>
-                <ul class="nav d-none d-md-flex gap-4">
+                <!-- Logo -->
+                <a href="{{ url('/') }}" class="d-flex align-items-center">
+                    <img src="{{ asset('img/nutriteam-logo.png') }}"
+     alt="NutriApp Logo"
+     style="height: 80px; max-width: 180px; object-fit: contain;">
+                </a>
+
+                @if ($role === 'buyer')
+                <ul class="nav d-none d-md-flex gap-4 ms-4">
                     <li class="nav-item"><a href="{{ route('home') }}" class="nav-link text-success fw-semibold">Home</a></li>
                     <li class="nav-item"><a href="{{ route('buyer.products.index') }}" class="nav-link text-success fw-semibold">Shop</a></li>
                     <li class="nav-item"><a href="{{ url('/#about-us') }}" class="nav-link text-success fw-semibold">About Us</a></li>
                     <li class="nav-item"><a href="{{ url('/#contact-us') }}" class="nav-link text-success fw-semibold">Contact Us</a></li>
                 </ul>
+
                 <div class="d-flex align-items-center gap-3">
                     @php
                         $notifications = Auth::user()->unreadNotifications->filter(fn($notif) => ($notif->data['type'] ?? '') !== 'farmer_order');
                     @endphp
+
+                    <!-- Notifications -->
                     <div class="dropdown position-relative">
                         <button class="btn position-relative" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-bell fs-5 text-dark"></i>
@@ -119,14 +125,9 @@
                         </ul>
                     </div>
                 </div>
-            </div>
-        </nav>
 
-        @elseif ($role === 'farmer')
-        <nav class="bg-success bg-opacity-25 shadow-sm py-2">
-            <div class="container d-flex justify-content-between align-items-center">
-                <div class="fw-bold text-success fs-4">NUTRI APP</div>
-                <div class="d-none d-md-flex gap-4">
+                @elseif ($role === 'farmer')
+                <div class="d-none d-md-flex gap-4 ms-4">
                     <a href="{{ route('home') }}" class="text-success text-decoration-none fw-semibold">Home</a>
                     <a href="{{ route('farmer.dashboard') }}" class="text-success text-decoration-none fw-semibold">My Products</a>
                     <a href="{{ route('farmer.orders.index') }}" class="text-success text-decoration-none fw-semibold">Orders</a>
@@ -148,9 +149,9 @@
                         </ul>
                     </div>
                 </div>
+                @endif
             </div>
         </nav>
-        @endif
     @endif
 
     <div class="min-h-screen bg-gray-100">
@@ -163,7 +164,6 @@
     @stack('scripts')
     @livewireScripts
 
-    <!-- Alpine and Bootstrap Bundle -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

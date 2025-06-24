@@ -12,39 +12,47 @@ use App\Models\Rating;
 
 class BuyerProductController extends Controller
 {
-    public function index(Request $request)
-    {
-        $query = Product::where('status', 'approved')
-            ->with(['farmer'])
-            ->withAvg('reviews', 'rating')
-            ->withCount('reviews');
+public function index(Request $request)
+{
+    $query = Product::where('status', 'approved')
+        ->with(['farmer'])
+        ->withAvg('reviews', 'rating')
+        ->withCount('reviews');
 
-        if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
-        }
-
-        $products = $query->latest()->get();
-
-        $topProducts = Product::where('status', 'approved')
-            ->with(['farmer'])
-            ->withAvg('reviews', 'rating')
-            ->withCount('reviews')
-            ->orderByDesc('reviews_avg_rating')
-            ->take(4)
-            ->get();
-
-        $discoverProducts = Product::where('status', 'approved')
-            ->with(['farmer'])
-            ->withAvg('reviews', 'rating')
-            ->withCount('reviews')
-            ->latest()
-            ->take(12)
-            ->get();
-
-        $categories = ['Fruits', 'Vegetable', 'Grains', 'Spices'];
-
-        return view('buyer.products.index', compact('products', 'topProducts', 'discoverProducts', 'categories'));
+    if ($request->has('search')) {
+        $query->where('name', 'like', '%' . $request->search . '%');
     }
+
+    if ($request->filled('province')) {
+        $query->where('province', $request->province);
+    }
+
+    $products = $query->latest()->get();
+
+    $topProducts = Product::where('status', 'approved')
+        ->with(['farmer'])
+        ->withAvg('reviews', 'rating')
+        ->withCount('reviews')
+        ->orderByDesc('reviews_avg_rating')
+        ->take(4)
+        ->get();
+
+    $discoverProducts = Product::where('status', 'approved')
+        ->with(['farmer'])
+        ->withAvg('reviews', 'rating')
+        ->withCount('reviews')
+        ->latest()
+        ->take(12)
+        ->get();
+
+    $categories = ['Fruits', 'Vegetable', 'Grains', 'Spices'];
+
+    // 👇 Add this line to pass CALABARZON provinces
+    $provinces = ['Cavite', 'Laguna', 'Batangas', 'Rizal', 'Quezon'];
+
+    return view('buyer.products.index', compact('products', 'topProducts', 'discoverProducts', 'categories', 'provinces'));
+}
+
 
     public function addToCart(Request $request, $productId)
     {
@@ -169,58 +177,66 @@ class BuyerProductController extends Controller
         ));
     }
 
-    public function search(Request $request)
-    {
-        $search = $request->input('search');
+public function search(Request $request)
+{
+    $search = $request->input('search');
 
-        $query = Product::where('status', 'approved')
-            ->with(['farmer'])
-            ->withAvg('reviews', 'rating')
-            ->withCount('reviews')
-            ->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', '%' . $search . '%')
-                  ->orWhere('description', 'LIKE', '%' . $search . '%');
-            });
+    $query = Product::where('status', 'approved')
+        ->with(['farmer'])
+        ->withAvg('reviews', 'rating')
+        ->withCount('reviews')
+        ->where(function ($q) use ($search) {
+            $q->where('name', 'LIKE', '%' . $search . '%')
+              ->orWhere('description', 'LIKE', '%' . $search . '%');
+        });
 
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
-        }
-
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
-        }
-
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
-        }
-
-        if ($request->filled('min_rating')) {
-            $query->having('reviews_avg_rating', '>=', $request->min_rating);
-        }
-
-        if ($request->has('in_stock')) {
-            $query->where('stock', '>', 0);
-        }
-
-        switch ($request->sort) {
-            case 'price_asc':
-                $query->orderBy('price', 'asc');
-                break;
-            case 'price_desc':
-                $query->orderBy('price', 'desc');
-                break;
-            case 'rating':
-                $query->orderByDesc('reviews_avg_rating');
-                break;
-            default:
-                $query->latest();
-        }
-
-        $products = $query->paginate(12);
-        $categories = ['fruits', 'vegetable', 'grains', 'spices'];
-
-        return view('buyer.products.search-results', compact('products', 'search', 'categories'));
+    if ($request->filled('category')) {
+        $query->where('category', $request->category);
     }
+
+    if ($request->filled('province')) {
+        $query->where('province', $request->province);
+    }
+
+    if ($request->filled('min_price')) {
+        $query->where('price', '>=', $request->min_price);
+    }
+
+    if ($request->filled('max_price')) {
+        $query->where('price', '<=', $request->max_price);
+    }
+
+    if ($request->filled('min_rating')) {
+        $query->having('reviews_avg_rating', '>=', $request->min_rating);
+    }
+
+    if ($request->has('in_stock')) {
+        $query->where('stock', '>', 0);
+    }
+
+    switch ($request->sort) {
+        case 'price_asc':
+            $query->orderBy('price', 'asc');
+            break;
+        case 'price_desc':
+            $query->orderBy('price', 'desc');
+            break;
+        case 'rating':
+            $query->orderByDesc('reviews_avg_rating');
+            break;
+        default:
+            $query->latest();
+    }
+
+    $products = $query->paginate(12);
+    $categories = ['fruits', 'vegetable', 'grains', 'spices'];
+
+    // For dropdown list of provinces
+    $provinces = ['Cavite', 'Laguna', 'Batangas', 'Rizal', 'Quezon'];
+
+    return view('buyer.products.search-results', compact('products', 'search', 'categories', 'provinces'));
+}
+
 
     public function show($id)
     {

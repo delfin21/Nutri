@@ -8,7 +8,6 @@
         object-fit: cover;
         border-radius: 12px;
     }
-
     .category-img {
         width: 100%;
         height: 180px;
@@ -16,12 +15,10 @@
         transition: transform 0.2s ease;
         border-radius: 12px;
     }
-
     .category-img:hover {
         transform: scale(1.05);
         cursor: pointer;
     }
-
     .product-card {
         background: white;
         border-radius: 12px;
@@ -34,11 +31,7 @@
         flex-direction: column;
         height: 100%;
     }
-
-    .product-card:hover {
-        transform: scale(1.02);
-    }
-
+    .product-card:hover { transform: scale(1.02); }
     .product-name {
         font-weight: 700;
         text-transform: uppercase;
@@ -47,19 +40,16 @@
         min-height: 40px;
         color: black
     }
-
     .product-location {
         font-size: 13px;
         color: #666;
         min-height: 35px;
     }
-
     .product-rating {
         color: #f4b400;
         font-size: 14px;
         min-height: 24px;
     }
-
     .product-price {
         color: #2e7d32;
         font-weight: bold;
@@ -70,13 +60,13 @@
 
 <div class="container my-4">
 
-<!-- Search Bar -->
+<!-- 🔍 Search Bar -->
 <form action="{{ route('buyer.products.search') }}" method="GET" class="mb-4">
     <label for="search" class="form-label fw-bold">Search</label>
     <input type="text" id="search" name="search" class="form-control" placeholder="Search product name..." value="{{ request('search') }}">
 </form>
 
-<!-- Filter Panel -->
+<!-- 🧮 Filter Panel -->
 <form method="GET" action="{{ route('buyer.products.search') }}" class="row g-3 mb-4 align-items-end">
     <div class="col-md-2">
         <label for="min_price" class="form-label fw-bold">Min Price</label>
@@ -96,11 +86,15 @@
         </select>
     </div>
     <div class="col-md-2">
-        <label class="form-label fw-bold">Availability</label>
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="in_stock" id="in_stock" value="1" {{ request('in_stock') ? 'checked' : '' }}>
-            <label class="form-check-label" for="in_stock">In stock only</label>
-        </div>
+        <label for="province" class="form-label fw-bold">Province</label>
+        <select id="province" name="province" class="form-select">
+            <option value="">All</option>
+            <option value="cavite" {{ request('province') == 'cavite' ? 'selected' : '' }}>Cavite</option>
+            <option value="laguna" {{ request('province') == 'laguna' ? 'selected' : '' }}>Laguna</option>
+            <option value="batangas" {{ request('province') == 'batangas' ? 'selected' : '' }}>Batangas</option>
+            <option value="rizal" {{ request('province') == 'rizal' ? 'selected' : '' }}>Rizal</option>
+            <option value="quezon" {{ request('province') == 'quezon' ? 'selected' : '' }}>Quezon</option>
+        </select>
     </div>
     <div class="col-md-2">
         <label for="sort" class="form-label fw-bold">Sort By</label>
@@ -111,6 +105,12 @@
             <option value="rating" {{ request('sort') == 'rating' ? 'selected' : '' }}>Top Rated</option>
         </select>
     </div>
+    <div class="col-md-1">
+        <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" name="in_stock" id="in_stock" value="1" {{ request('in_stock') ? 'checked' : '' }}>
+            <label class="form-check-label" for="in_stock">In stock</label>
+        </div>
+    </div>
     <div class="col-md-1 d-grid">
         <button type="submit" class="btn btn-success">Apply</button>
     </div>
@@ -119,16 +119,13 @@
     </div>
 </form>
 
-
-<!-- Categories Section -->
+<!-- 🧭 CATEGORIES -->
 <div class="mb-5">
     <h5 class="mb-3 fw-bold">CATEGORIES</h5>
     <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3">
-
         @php
             $staticCategories = ['Grains', 'Fruits', 'Vegetable', 'Spices', 'Beverages'];
         @endphp
-
         @foreach ($staticCategories as $cat)
             <div class="col text-center">
                 <a href="{{ route('buyer.products.byCategory', ['category' => strtolower($cat)]) }}" class="text-decoration-none text-dark">
@@ -136,7 +133,6 @@
                          onerror="this.src='{{ asset('img/categories/default.jpg') }}';"
                          class="img-fluid rounded category-img"
                          alt="{{ $cat }}">
-
                     <p class="fw-semibold mt-2 {{ isset($categoryName) && strtolower($categoryName) == strtolower($cat) ? 'text-success' : '' }}">
                         {{ strtoupper($cat) }}
                     </p>
@@ -146,13 +142,12 @@
     </div>
 </div>
 
-
-<!-- Products Title -->
+<!-- 🥇 Products Header -->
 <h5 class="fw-bold mb-4 text-center text-success">
     {{ isset($categoryName) ? strtoupper($categoryName) . ' PRODUCTS' : 'TOP PRODUCTS' }}
 </h5>
 
-<!-- Top Products -->
+<!-- 🛍 TOP PRODUCTS -->
 <div class="top-products p-4 rounded mb-5 text-white" style="background-color: #1b4d3e;">
     <div class="row g-4">
         @forelse ($topProducts as $product)
@@ -163,18 +158,15 @@
                     </a>
                     <div class="product-name">{{ strtoupper($product->name) }}</div>
                     <div class="product-location">
-                        Seller: {{ strtoupper($product->farmer->business_name ?? $product->farmer->name ?? 'Unknown') }}
-                        <br>
+                        Seller: {{ strtoupper($product->farmer->business_name ?? $product->farmer->name ?? 'Unknown') }}<br>
                         {{ ucfirst($product->city ?? 'Unknown') }}, {{ ucfirst($product->province ?? 'Unknown') }}
                     </div>
-                        <div class="product-rating text-warning">
-                            @for ($i = 1; $i <= 5; $i++)
-                                <i class="{{ $i <= round($product->reviews_avg_rating) ? 'fas' : 'far' }} fa-star"></i>
-                            @endfor
-                            <span class="text-muted ms-1">
-                                ({{ $product->reviews_count ?? 0 }})
-                            </span>
-                        </div>
+                    <div class="product-rating text-warning">
+                        @for ($i = 1; $i <= 5; $i++)
+                            <i class="{{ $i <= round($product->reviews_avg_rating) ? 'fas' : 'far' }} fa-star"></i>
+                        @endfor
+                        <span class="text-muted ms-1">({{ $product->reviews_count ?? 0 }})</span>
+                    </div>
                     <div class="product-price">₱{{ number_format($product->price, 2) }}</div>
                 </div>
             </div>
@@ -184,7 +176,7 @@
     </div>
 </div>
 
-<!-- Daily Discover -->
+<!-- 🌱 DAILY DISCOVER -->
 <div class="bg-lighter p-4 rounded">
     <h4 class="text-success text-center fw-bold">DAILY DISCOVER</h4>
     <p class="text-muted text-center mb-4">Discover some of our new and fresh crops today!</p>
@@ -197,19 +189,15 @@
                     </a>
                     <div class="product-name">{{ strtoupper($product->name) }}</div>
                     <div class="product-location">
-                        Seller: {{ strtoupper($product->farmer->business_name ?? $product->farmer->name ?? 'Unknown') }}
-                        <br>
+                        Seller: {{ strtoupper($product->farmer->business_name ?? $product->farmer->name ?? 'Unknown') }}<br>
                         {{ ucfirst($product->city ?? 'Unknown') }}, {{ ucfirst($product->province ?? 'Unknown') }}
                     </div>
-                        <div class="product-rating text-warning">
-                            {{-- Display stars based on average rating --}}
-                            @for ($i = 1; $i <= 5; $i++)
-                                <i class="{{ $i <= round($product->reviews_avg_rating) ? 'fas' : 'far' }} fa-star"></i>
-                            @endfor
-                            <span class="text-muted ms-1">
-                                ({{ $product->reviews_count ?? 0 }})
-                            </span>
-                        </div>
+                    <div class="product-rating text-warning">
+                        @for ($i = 1; $i <= 5; $i++)
+                            <i class="{{ $i <= round($product->reviews_avg_rating) ? 'fas' : 'far' }} fa-star"></i>
+                        @endfor
+                        <span class="text-muted ms-1">({{ $product->reviews_count ?? 0 }})</span>
+                    </div>
                     <div class="product-price">₱{{ number_format($product->price, 2) }}</div>
                 </div>
             </div>
