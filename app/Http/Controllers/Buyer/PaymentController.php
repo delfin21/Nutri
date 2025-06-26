@@ -116,13 +116,8 @@ class PaymentController extends Controller
         if ($request->hasFile('qr_proof')) {
             $filename = 'proof_' . time() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $request->file('qr_proof')->getClientOriginalName());
             $proofPath = $request->file('qr_proof')->storeAs('payments', $filename, 'public');
-
-
-
-            // Optional debug log
             \Log::info('QR proof uploaded to: ' . $proofPath);
         }
-
 
         $payment = Payment::create([
             'intent_id' => 'mock_' . Str::random(10),
@@ -130,6 +125,7 @@ class PaymentController extends Controller
             'amount' => $totalAmount * 100,
             'status' => 'paid',
             'buyer_id' => $buyer->id,
+            'farmer_id' => $cartItems->first()->product->user_id,
             'order_ids' => json_encode($orderIds),
             'is_test' => true,
             'response_payload' => json_encode([
@@ -145,6 +141,85 @@ class PaymentController extends Controller
         session(['reference' => 'MOCK_REF_' . Str::random(6)]);
 
         return redirect()->route('buyer.payment.thankYou');
+    }
+
+    public function mockSuccessApi(Request $request)
+    {
+        try {
+            $request->validate([
+                'payment_method' => 'required|in:gcash,maya,card',
+                'reference_number' => 'nullable|string',
+                'payer_name' => 'nullable|string',
+                'payer_mobile' => 'nullable|string',
+                'proof_image' => 'nullable|image|max:2048',
+                'first_name' => 'required|string',
+                'last_name' => 'required|string',
+                'phone' => 'required|string',
+                'street' => 'required|string',
+                'city' => 'required|string',
+                'region' => 'required|string',
+                'postal_code' => 'required|string',
+                'items' => 'required|json',
+                'total' => 'required|numeric',
+            ]);
+
+            $buyer = Auth::user();
+            $proofPath = null;
+
+            if ($request->hasFile('proof_image')) {
+                $filename = 'proof_' . time() . '.' . $request->file('proof_image')->getClientOriginalExtension();
+                $proofPath = $request->file('proof_image')->storeAs('payments', $filename, 'public');
+            }
+
+            $items = json_decode($request->items, true);
+            $orderIds = [];
+
+            foreach ($items as $item) {
+                $product = Product::findOrFail($item['product_id']);
+                $order = Order::create([
+                    'order_code' => Order::generateStructuredOrderCode($product->user),
+                    'buyer_id' => $buyer->id,
+                    'product_id' => $product->id,
+                    'farmer_id' => $product->farmer_id ?? $product->user_id,
+                    'quantity' => $item['quantity'],
+                    'price' => $product->price,
+                    'total_price' => $product->price * $item['quantity'],
+                    'status' => 'Pending',
+                    'payment_status' => 'paid',
+                    'buyer_phone' => $request->phone,
+                    'buyer_address' => $request->street,
+                    'buyer_city' => $request->city,
+                    'buyer_region' => $request->region,
+                    'buyer_postal_code' => $request->postal_code,
+                ]);
+
+                $orderIds[] = $order->id;
+                $this->notifyUsers($order, $buyer);
+            }
+
+            $payment = Payment::create([
+                'intent_id' => 'mock_' . Str::random(10),
+                'method' => $request->payment_method,
+                'amount' => $request->total * 100,
+                'status' => 'paid',
+                'buyer_id' => $buyer->id,
+                'order_ids' => json_encode($orderIds),
+                'is_test' => true,
+                'response_payload' => json_encode([
+                    'qr_reference' => $request->reference_number,
+                    'qr_name' => $request->payer_name,
+                    'qr_mobile' => $request->payer_mobile,
+                    'proof_path' => $proofPath,
+                ]),
+            ]);
+
+            Order::whereIn('id', $orderIds)->update(['payment_id' => $payment->id]);
+
+            return response()->json(['message' => '✅ Payment recorded.', 'payment_id' => $payment->id]);
+        } catch (\Throwable $e) {
+            \Log::error('mockSuccessApi failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Server error', 'details' => $e->getMessage()], 500);
+        }
     }
 
     public function showReceipt(Payment $payment)
