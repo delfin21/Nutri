@@ -31,6 +31,7 @@ use App\Http\Controllers\Buyer\ReturnRequestController as BuyerReturnRequestCont
 use App\Http\Controllers\Farmer\FarmerReturnController;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Farmer\FarmerPayoutController;
+use App\Http\Controllers\Farmer\FarmerRecommendationController;
 
 
 
@@ -89,10 +90,14 @@ Route::prefix('farmer')->name('farmer.')->middleware(['auth'])->group(function (
     Route::get('/notifications', [FarmerNotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/mark-all', [FarmerNotificationController::class, 'markAll'])->name('notifications.markAll');
 
+    
+    // 📄 Export Recommendations to PDF
+    Route::get('/recommendations/pdf', [FarmerRecommendationController::class, 'downloadPdf'])->name('recommendations.pdf');
+
+
     // 💸 Payouts / Earnings
     Route::get('/payouts', [FarmerPayoutController::class, 'index'])->name('payouts.index');
     Route::post('/payouts/store', [FarmerPayoutController::class, 'store'])->name('payouts.store');
-
 
     // 🧾 Return Requests (Rebuttal)
     Route::get('/returns', [FarmerReturnController::class, 'index'])->name('returns.index');
@@ -101,14 +106,19 @@ Route::prefix('farmer')->name('farmer.')->middleware(['auth'])->group(function (
     Route::post('/returns/{id}/approve', [FarmerReturnController::class, 'approve'])->name('returns.approve');
     Route::post('/returns/{id}/reject', [FarmerReturnController::class, 'reject'])->name('returns.reject');
 
-
     // 💬 Messaging
     Route::get('/messages/inbox', [MessageController::class, 'inbox'])->name('messages.inbox');
     Route::get('/messages/create', [MessageController::class, 'create'])->name('messages.create');
     Route::post('/messages/store', [MessageController::class, 'store'])->name('messages.store');
     Route::get('/messages/{user}', [MessageController::class, 'show'])->whereNumber('user')->name('messages.show');
     Route::post('/messages/{user}/reply', [MessageController::class, 'reply'])->name('messages.reply');
+
+    // 📈 Prescriptive Analytics Recommendations
+    Route::get('/recommendations', [FarmerRecommendationController::class, 'index'])->name('recommendations');
+    Route::get('/recommendations/pdf', [FarmerRecommendationController::class, 'downloadPdf'])->name('recommendations.pdf');
+
 });
+
 
 // 🛍 Buyer Section
 Route::prefix('buyer')->name('buyer.')->middleware(['auth'])->group(function () {

@@ -74,10 +74,19 @@
   <img src="{{ asset('img/nutriteam-logo.png') }}" alt="Nutri Logo" style="max-width: 120px; height: auto;">
   <div class="fw-bold text-white mt-2">Nutri Team</div>
 </div>
+<div class="text-center mt-2 px-2">
+    <div class="fw-bold text-white">👨‍🌾 Hello, Farmer!</div>
+    <div class="fw-bold text-white">{{ Auth::user()->name }}</div>
+</div>
+
             <nav class="nav flex-column">
                 <a class="nav-link {{ request()->routeIs('farmer.dashboard') ? 'active' : '' }}" href="{{ route('farmer.dashboard') }}">
                     <i class="bi bi-speedometer2 me-2"></i> Dashboard
                 </a>
+                <a class="nav-link {{ request()->routeIs('farmer.recommendations') ? 'active' : '' }}" href="{{ route('farmer.recommendations') }}">
+                    <i class="bi bi-graph-up-arrow me-2"></i> Recommendations
+                </a>
+
                 <a class="nav-link {{ request()->is('farmer/profile') ? 'active' : '' }}" href="{{ route('farmer.profile.show') }}">
 
                     <i class="bi bi-person me-2"></i> Profile
