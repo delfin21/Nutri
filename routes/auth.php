@@ -48,9 +48,10 @@ Route::middleware('auth')->group(function () {
         ->name('verification.send');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
-        ->name('password.confirm');
+    ->name('password.confirm.screen');
 
-    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+    Route::post('confirm-password', [ConfirmablePasswordController::class, 'store'])
+    ->name('password.confirm.submit');
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
