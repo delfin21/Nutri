@@ -203,31 +203,103 @@
         </div>
 
         <div class="mb-3">
-          <label for="password" class="form-label">Password</label>
-          <input type="password" id="password" name="password" class="form-control" required>
-          @error('password')
-            <div class="text-danger small mt-1">{{ $message }}</div>
-          @enderror
-        </div>
-
-        <div class="mb-3">
-          <label for="password_confirmation" class="form-label">Confirm Password</label>
-          <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" required>
-        </div>
-
-        <div class="mb-3 text-center">
-          <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">View Terms and Conditions</a>
-        </div>
+  <label for="password" class="form-label">Password</label>
+ <div class="input-group">
+  <input type="password" id="password" name="password" class="form-control" required>
+  <button class="btn btn-outline-secondary toggle-password" type="button" tabindex="-1">
+    <i class="fa fa-eye" id="togglePasswordIcon"></i>
+  </button>
+</div>
 
 
-        <div class="d-flex justify-content-between align-items-center">
-          <a href="{{ route('login') }}">Already registered?</a>
-          <button type="submit" id="registerBtn" class="btn btn-primary" disabled>Register</button>
-        </div>
-      </form>
+  <!-- Password live rule list -->
+  <div class="form-text text-muted small mt-1">
+    Must contain at least:
+  </div>
+  <ul id="passwordRules" class="text-muted small mb-0" style="list-style-type: none; padding-left: 0;">
+    <li id="rule-len">❌ Minimum 8 characters</li>
+    <li id="rule-upper">❌ 1 uppercase letter</li>
+    <li id="rule-lower">❌ 1 lowercase letter</li>
+    <li id="rule-number">❌ 1 number</li>
+    <li id="rule-special">❌ 1 special character (@$!%*?&)</li>
+  </ul>
+
+  @error('password')
+    <div class="text-danger small mt-1">{{ $message }}</div>
+  @enderror
+</div>
+
+
+
+<div class="mb-3">
+  <label for="password_confirmation" class="form-label">Confirm Password</label>
+  <div class="input-group">
+    <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" required>
+    <button class="btn btn-outline-secondary toggle-confirm-password" type="button" tabindex="-1">
+      <i class="fa fa-eye" id="toggleConfirmPasswordIcon"></i>
+    </button>
+  </div>
+</div>
+
+
+
+<!-- ✅ PAYOUT SECTION: Show only if Farmer is selected -->
+<div id="payout-section" style="display: none;">
+  <h5 class="mt-4">Payout Information (for Farmers)</h5>
+
+  <div class="mb-3">
+    <label for="payout_method" class="form-label">Primary Payout Method <span class="text-danger">*</span></label>
+    <select class="form-select" name="payout_method" id="payout_method" onchange="updatePayoutFields()">
+      <option value="">Select method</option>
+      <option value="GCash">GCash</option>
+      <option value="Bank">Bank Transfer</option>
+      <option value="Maya">Maya</option>
+    </select>
+  </div>
+
+  <!-- ✅ GCash/Maya Fields -->
+  <div id="gcash_fields" style="display: none;">
+    <div class="mb-3">
+      <label class="form-label">Mobile Number</label>
+      <input type="text" class="form-control" name="payout_account" placeholder="e.g. 09XXXXXXXXX">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Account Holder Name</label>
+      <input type="text" class="form-control" name="payout_name" placeholder="e.g. Juan Dela Cruz">
+    </div>
+  </div>
+
+  <!-- ✅ Bank Fields -->
+  <div id="bank_fields" style="display: none;">
+    <div class="mb-3">
+      <label class="form-label">Bank Name</label>
+      <input type="text" class="form-control" name="payout_bank" placeholder="e.g. BPI, BDO">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Bank Account Name</label>
+      <input type="text" class="form-control" name="payout_bank_name" placeholder="e.g. Juan Dela Cruz">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Bank Account Number</label>
+      <input type="text" class="form-control" name="payout_bank_account" placeholder="e.g. 1234567890">
     </div>
   </div>
 </div>
+
+<!-- Terms and Submit -->
+<div class="mb-3 text-center">
+  <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">View Terms and Conditions</a>
+</div>
+
+<div class="d-flex justify-content-between align-items-center">
+  <a href="{{ route('login') }}">Already registered?</a>
+  <button type="submit" id="registerBtn" class="btn btn-primary" disabled>Register</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+
 
 <!-- 📄 Terms Modal -->
 <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
@@ -344,22 +416,87 @@
 <!-- ✅ Enable button if checkbox is checked -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const modalAgree = document.getElementById('modalAgree');
-    const closeBtn = document.getElementById('closeTerms');
-    const registerBtn = document.getElementById('registerBtn');
+document.addEventListener('DOMContentLoaded', function () {
+  const modalAgree = document.getElementById('modalAgree');
+  const closeBtn = document.getElementById('closeTerms');
+  const registerBtn = document.getElementById('registerBtn');
+  const roleField = document.getElementById('role');
+  const payoutSection = document.getElementById('payout-section');
 
-    modalAgree.addEventListener('change', function () {
-      closeBtn.disabled = !this.checked;
-    });
-
-    closeBtn.addEventListener('click', function () {
-      if (modalAgree.checked) {
-        registerBtn.disabled = false;
-      }
-    });
+  // ✅ Enable register only after agreeing
+  modalAgree.addEventListener('change', () => {
+    closeBtn.disabled = !modalAgree.checked;
   });
+  closeBtn.addEventListener('click', () => {
+    if (modalAgree.checked) registerBtn.disabled = false;
+  });
+
+  // ✅ Toggle payout section visibility based on role
+  roleField.addEventListener('change', function () {
+    payoutSection.style.display = this.value === 'farmer' ? 'block' : 'none';
+  });
+
+  // ✅ Password live feedback
+  const passwordInput = document.getElementById('password');
+  if (passwordInput) {
+    passwordInput.addEventListener('input', function () {
+      const val = passwordInput.value;
+
+      document.getElementById('rule-len').textContent =
+        val.length >= 8 ? '✅ Minimum 8 characters' : '❌ Minimum 8 characters';
+
+      document.getElementById('rule-upper').textContent =
+        /[A-Z]/.test(val) ? '✅ 1 uppercase letter' : '❌ 1 uppercase letter';
+
+      document.getElementById('rule-lower').textContent =
+        /[a-z]/.test(val) ? '✅ 1 lowercase letter' : '❌ 1 lowercase letter';
+
+      document.getElementById('rule-number').textContent =
+        /\d/.test(val) ? '✅ 1 number' : '❌ 1 number';
+
+      document.getElementById('rule-special').textContent =
+        /[@$!%*?&]/.test(val) ? '✅ 1 special character (@$!%*?&)' : '❌ 1 special character (@$!%*?&)';
+    });
+  }
+
+  // 👁 Toggle password visibility
+  const toggleBtn = document.querySelector('.toggle-password');
+  const passwordField = document.getElementById('password');
+  const toggleIcon = document.getElementById('togglePasswordIcon');
+
+  toggleBtn.addEventListener('click', function () {
+    const isVisible = passwordField.type === 'text';
+    passwordField.type = isVisible ? 'password' : 'text';
+    toggleIcon.classList.toggle('fa-eye');
+    toggleIcon.classList.toggle('fa-eye-slash');
+  });
+
+    // 👁 Toggle confirm password visibility
+  const toggleConfirmBtn = document.querySelector('.toggle-confirm-password');
+  const confirmPasswordField = document.getElementById('password_confirmation');
+  const toggleConfirmIcon = document.getElementById('toggleConfirmPasswordIcon');
+
+  toggleConfirmBtn.addEventListener('click', function () {
+    const isVisible = confirmPasswordField.type === 'text';
+    confirmPasswordField.type = isVisible ? 'password' : 'text';
+    toggleConfirmIcon.classList.toggle('fa-eye');
+    toggleConfirmIcon.classList.toggle('fa-eye-slash');
+  });
+
+  updatePayoutFields(); // initialize payout form
+});
+
+function updatePayoutFields() {
+  const method = document.getElementById('payout_method').value;
+  const gcashFields = document.getElementById('gcash_fields');
+  const bankFields = document.getElementById('bank_fields');
+
+  gcashFields.style.display = (method === 'GCash' || method === 'Maya') ? 'block' : 'none';
+  bankFields.style.display = (method === 'Bank') ? 'block' : 'none';
+}
 </script>
+
+
 
 
 </body>
