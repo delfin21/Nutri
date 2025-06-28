@@ -10,7 +10,8 @@
 
         <x-validation-errors class="mb-4" />
 
-        <form method="POST" action="{{ route('password.confirm') }}">
+        <form method="POST" action="{{ route('password.confirm.submit') }}">
+
             @csrf
 
             <div>

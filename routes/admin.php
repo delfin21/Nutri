@@ -160,7 +160,8 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     // 🔑 Password
     Route::get('/password/change', [AdminProfileController::class, 'changePasswordForm'])->name('password.change');
-    Route::post('/password/update', [AdminProfileController::class, 'updatePassword'])->name('password.update');
+    Route::post('/password/update', [AdminProfileController::class, 'updatePassword'])->name('password.change.update');
+
 
     // 🔔 Notifications
     Route::prefix('notifications')->name('notifications.')->group(function () {

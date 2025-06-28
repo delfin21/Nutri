@@ -20,7 +20,8 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.password.update') }}" method="POST">
+    <form action="{{ route('admin.password.change.update') }}" method="POST">
+
         @csrf
 
         <div class="mb-3">
