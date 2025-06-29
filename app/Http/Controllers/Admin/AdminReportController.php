@@ -5,9 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
+use App\Models\Product;
 use Carbon\Carbon;
-use App\Exports\SalesReportExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SalesExport;
 
 class AdminReportController extends Controller
 {
@@ -15,27 +16,62 @@ class AdminReportController extends Controller
     {
         $startDate = $request->input('start_date') ?? Carbon::now()->subMonth()->toDateString();
         $endDate = $request->input('end_date') ?? Carbon::now()->toDateString();
+        $category = $request->input('category');
+        $product = $request->input('product');
 
-        // ✅ Make sure it matches 'completed' for consistency
-        $orders = Order::with(['product', 'buyer'])
+        // Fetch unique category names from the products table
+        $categories = Product::select('category')
+            ->distinct()
+            ->whereNotNull('category')
+            ->orderBy('category')
+            ->pluck('category');
+
+        $ordersQuery = Order::with(['product.farmer', 'buyer'])
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->where('status', 'completed')
-            ->paginate(10);
+            ->where('status', 'completed');
 
-        return view('admin.reports.index', compact('orders', 'startDate', 'endDate'));
+        if ($category) {
+            $ordersQuery->whereHas('product', function ($q) use ($category) {
+                $q->where('category', $category);
+            });
+        }
+
+        if ($product) {
+            $ordersQuery->whereHas('product', function ($q) use ($product) {
+                $q->where('name', 'like', '%' . $product . '%');
+            });
+        }
+
+        $orders = $ordersQuery->paginate(10);
+
+        return view('admin.reports.index', compact('orders', 'startDate', 'endDate', 'categories', 'category', 'product'));
     }
 
     public function export(Request $request)
     {
         $startDate = $request->input('start_date') ?? Carbon::now()->subMonth()->toDateString();
         $endDate = $request->input('end_date') ?? Carbon::now()->toDateString();
+        $category = $request->input('category');
+        $product = $request->input('product');
 
-        // ✅ Match the same filtering logic as index()
-        $orders = Order::with('product', 'buyer')
+        $ordersQuery = Order::with(['product.farmer', 'buyer'])
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->where('status', 'completed')
-            ->get();
+            ->where('status', 'completed');
 
-        return Excel::download(new SalesReportExport($orders), 'sales_report.xlsx');
+        if ($category) {
+            $ordersQuery->whereHas('product', function ($q) use ($category) {
+                $q->where('category', $category);
+            });
+        }
+
+        if ($product) {
+            $ordersQuery->whereHas('product', function ($q) use ($product) {
+                $q->where('name', 'like', '%' . $product . '%');
+            });
+        }
+
+        $orders = $ordersQuery->get();
+
+        return Excel::download(new SalesExport($orders), 'sales_report.xlsx');
     }
 }

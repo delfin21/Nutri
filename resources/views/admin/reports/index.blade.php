@@ -7,27 +7,45 @@
     <h4 class="mb-4 text-white">Sales Report</h4>
 
     {{-- Filter & Export Form --}}
-    <form method="GET" action="{{ route('admin.reports.index') }}" class="row g-2 align-items-end mb-4">
-        <div class="col-md-3">
-            <label class="form-label text-white">Start Date</label>
-            <input type="date" name="start_date" class="form-control" value="{{ $startDate }}">
-        </div>
+ <form method="GET" action="{{ route('admin.reports.index') }}" class="row gx-3 gy-2 align-items-end mb-4">
+    <div class="col-md-2 col-sm-6">
+        <label class="form-label text-white mb-1">Start</label>
+        <input type="date" name="start_date" class="form-control form-control-sm" value="{{ $startDate }}">
+    </div>
 
-        <div class="col-md-3">
-            <label class="form-label text-white">End Date</label>
-            <input type="date" name="end_date" class="form-control" value="{{ $endDate }}">
-        </div>
+    <div class="col-md-2 col-sm-6">
+        <label class="form-label text-white mb-1">End</label>
+        <input type="date" name="end_date" class="form-control form-control-sm" value="{{ $endDate }}">
+    </div>
 
-        <div class="col-md-2 d-flex align-items-end">
-            <button type="submit" class="btn btn-utility btn-search w-100">Filter</button>
-        </div>
+    <div class="col-md-3 col-sm-6">
+        <label class="form-label text-white mb-1">Category</label>
+        <select name="category" class="form-select form-select-sm">
+            <option value="">All Categories</option>
+            @foreach($categories as $cat)
+                <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>
+                    {{ $cat }}
+                </option>
+            @endforeach
+        </select>
+    </div>
 
-        <div class="col-md-2 d-flex align-items-end">
-            <button type="submit" formaction="{{ route('admin.reports.export') }}" class="btn btn-utility btn-export w-100">
-                Export to Excel
-            </button>
-        </div>
-    </form>
+    <div class="col-md-3 col-sm-6">
+        <label class="form-label text-white mb-1">Product</label>
+        <input type="text" name="product" class="form-control form-control-sm" placeholder="Product name..." value="{{ request('product') }}">
+    </div>
+
+    <div class="col-md-1 col-6">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+    </div>
+
+    <div class="col-md-1 col-6">
+        <button type="submit" formaction="{{ route('admin.reports.export') }}" class="btn btn-success w-100">
+            Export
+        </button>
+    </div>
+</form>
+
 
     {{-- Report Table --}}
     <div class="card p-4">
@@ -37,6 +55,8 @@
                     <tr>
                         <th>Order ID</th>
                         <th>Product</th>
+                        <th>Category</th>
+                        <th>Farmer</th>
                         <th>Buyer</th>
                         <th>Quantity</th>
                         <th>Total Price (₱)</th>
@@ -49,6 +69,8 @@
                         <tr style="background: white; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
                             <td><span class="order-id">{{ $order->id }}</span></td>
                             <td>{{ $order->product->name ?? '-' }}</td>
+                            <td>{{ $order->product->category ?? '-' }}</td>
+                            <td>{{ $order->product->farmer->name ?? '-' }}</td>
                             <td>{{ $order->buyer->name ?? '-' }}</td>
                             <td>{{ $order->quantity }}</td>
                             <td>₱{{ number_format($order->total_price, 2) }}</td>
@@ -56,7 +78,7 @@
                             <td>{{ $order->created_at->format('Y-m-d') }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="7">No sales found for this period.</td></tr>
+                        <tr><td colspan="9">No sales found for this period.</td></tr>
                     @endforelse
                 </tbody>
             </table>
