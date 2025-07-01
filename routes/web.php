@@ -66,6 +66,7 @@ Route::get('/dashboard', function () {
 
 // 🌾 Farmer Section
 Route::prefix('farmer')->name('farmer.')->middleware(['auth'])->group(function () {
+    Route::get('/help', fn () => view('farmer.help'))->name('help');
     Route::get('/dashboard', [FarmerDashboardController::class, 'index'])->name('dashboard');
     Route::get('/profile', [FarmerProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [FarmerProfileController::class, 'edit'])->name('profile.edit');

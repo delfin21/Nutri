@@ -122,7 +122,9 @@
     <i class="bi bi-gear me-2"></i> Settings
 </a>
 
-                <a class="nav-link" href="#"><i class="bi bi-question-circle me-2"></i> Help</a>
+                <a class="nav-link {{ request()->routeIs('farmer.help') ? 'active' : '' }}" href="{{ route('farmer.help') }}">
+                    <i class="bi bi-question-circle me-2"></i> Help
+                </a>
                 <form method="POST" action="{{ route('logout') }}" class="mt-auto">
                     @csrf
                     <button type="submit" class="btn btn-outline-light w-100 rounded-0 mt-3">
