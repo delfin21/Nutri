@@ -40,17 +40,29 @@
 
 </div>
 
-<div class="mb-3">
-  <label for="province" class="form-label">Province <span class="text-danger">*</span></label>
-  <input type="text" id="province" name="province" class="form-control"
-         value="{{ old('province', $product->province ?? '') }}" required>
+<div class="row">
+  <div class="col-md-6 mb-3">
+    <label for="province" class="form-label fw-bold">Province <span class="text-danger">*</span></label>
+    <select name="province" id="province" class="form-select" required>
+      <option value="">Select Province</option>
+      @php
+        $provinces = ['Cavite', 'Laguna', 'Batangas', 'Rizal', 'Quezon'];
+      @endphp
+      @foreach($provinces as $prov)
+        <option value="{{ $prov }}" {{ old('province', $product->province ?? '') == $prov ? 'selected' : '' }}>{{ $prov }}</option>
+      @endforeach
+    </select>
+  </div>
+
+  <div class="col-md-6 mb-3">
+    <label for="city" class="form-label fw-bold">City <span class="text-danger">*</span></label>
+    <select name="city" id="city" class="form-select" required>
+      <option value="">Select City</option>
+      {{-- JS will populate based on province --}}
+    </select>
+  </div>
 </div>
 
-<div class="mb-3">
-  <label for="city" class="form-label">City <span class="text-danger">*</span></label>
-  <input type="text" id="city" name="city" class="form-control"
-         value="{{ old('city', $product->city ?? '') }}" required>
-</div>
 
 <div class="mb-3">
   <label for="harvested_at" class="form-label fw-bold">Harvest Date <span class="text-danger">*</span></label>
@@ -142,11 +154,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const templateSelect = document.getElementById('template-name');
   const manualInput = document.getElementById('manual-name');
   const dependentFields = [
-  'price', 'stock', 'province', 'city', 'ripeness',
-  'harvested_at', 'description', 'image',
-  'shelf_life', 'storage'
-];
-
+    'price', 'stock', 'province', 'city', 'ripeness',
+    'harvested_at', 'description', 'image',
+    'shelf_life', 'storage'
+  ];
 
   function setFieldsEnabled(enabled) {
     dependentFields.forEach(id => {
@@ -213,7 +224,46 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // Run category fetch if value is pre-selected (edit form)
+  // Province → City setup
+  const provinceToCities = {
+    "Cavite": ["Dasmariñas", "Imus", "Bacoor", "Trece Martires", "General Trias", "Tagaytay", "Silang", "Kawit", "Carmona", "Rosario", "Naic", "Tanza"],
+    "Laguna": ["San Pedro", "Biñan", "Santa Rosa", "Calamba", "Los Baños", "Bay", "San Pablo", "Cabuyao", "Nagcarlan", "Pila", "Victoria"],
+    "Batangas": ["Batangas City", "Lipa", "Tanauan", "Nasugbu", "Taal", "San Juan", "Bauan", "Rosario", "Balayan", "Lemery", "Calaca"],
+    "Rizal": ["Antipolo", "Taytay", "Cainta", "Binangonan", "Angono", "San Mateo", "Rodriguez", "Tanay", "Morong", "Cardona"],
+    "Quezon": ["Lucena", "Tayabas", "Sariaya", "Candelaria", "Tiaong", "Pagbilao", "Gumaca", "Lopez", "Mauban", "Infanta"]
+  };
+
+  function updateCityOptions(selectedProvince, selectedCity = '') {
+    const citySelect = document.getElementById('city');
+    citySelect.innerHTML = '<option value="">Select City</option>';
+    if (provinceToCities[selectedProvince]) {
+      provinceToCities[selectedProvince].forEach(city => {
+        const opt = document.createElement('option');
+        opt.value = city;
+        opt.textContent = city;
+        if (city === selectedCity) opt.selected = true;
+        citySelect.appendChild(opt);
+      });
+      citySelect.disabled = false;
+    } else {
+      citySelect.disabled = true;
+    }
+  }
+
+  // Run initial setup if editing
+  const provinceSelect = document.getElementById('province');
+  const citySelect = document.getElementById('city');
+  const oldProvince = provinceSelect.value;
+  const oldCity = "{{ old('city', $product->city ?? '') }}";
+
+  if (oldProvince) updateCityOptions(oldProvince, oldCity);
+  else citySelect.disabled = true;
+
+  provinceSelect.addEventListener('change', function () {
+    updateCityOptions(this.value);
+  });
+
+  // Trigger preselected category → template
   if (categorySelect.value) {
     const event = new Event('change');
     categorySelect.dispatchEvent(event);

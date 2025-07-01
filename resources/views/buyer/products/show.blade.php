@@ -84,15 +84,20 @@
 
                 <label for="quantityInput" class="me-2 mb-0"><strong>Quantity:</strong></label>
 
-                <input
-                    type="number"
-                    id="quantityInput"
-                    min="1"
-                    max="{{ $product->stock }}"
-                    value="1"
-                    class="form-control w-25"
-                    {{ $product->stock <= 0 ? 'disabled' : '' }}
-                >
+                <div class="input-group" style="width: 120px;">
+                    <input
+                        type="number"
+                        id="quantityInput"
+                        min="1"
+                        max="{{ $product->stock }}"
+                        value="1"
+                        class="form-control"
+                        name="quantity"
+                        {{ $product->stock <= 0 ? 'disabled' : '' }}
+                    >
+                    <span class="input-group-text">kg</span>
+                </div>
+
 
                 {{-- Add to Cart --}}
                 <form id="addToCartForm" action="{{ route('buyer.products.add', $product->id) }}" method="POST">
